@@ -1,0 +1,81 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle token expiration
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const authAPI = {
+  register: (data) => api.post('/register', data),
+  login: (data) => api.post('/login', data),
+  logout: () => api.post('/logout'),
+  getUser: () => api.get('/user'),
+  updateUser: (data) => api.put('/user', data),
+};
+
+export const productAPI = {
+  getAll: (params = {}) => api.get('/products', { params }),
+  getMyProducts: () => api.get('/my-products'),
+  getById: (id) => api.get(`/products/${id}`),
+  create: (data) => api.post('/products', data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.delete(`/products/${id}`),
+};
+
+export const transactionAPI = {
+  create: (data) => api.post('/transactions', data),
+  getMyTransactions: () => api.get('/my-transactions'),
+  confirm: (id) => api.patch(`/transactions/${id}/confirm`),
+  refund: (id) => api.patch(`/transactions/${id}/refund`),
+};
+
+export const barterAPI = {
+  create: (data) => api.post('/barters', data),
+  getMyBarters: () => api.get('/my-barters'),
+  accept: (id) => api.patch(`/barters/${id}/accept`),
+  complete: (id) => api.patch(`/barters/${id}/complete`),
+};
+
+export const tradeInAPI = {
+  create: (data) => api.post('/trade-ins', data),
+  getMyTradeIns: () => api.get('/my-trade-ins'),
+  agree: (id) => api.patch(`/trade-ins/${id}/agree`),
+  pay: (id) => api.patch(`/trade-ins/${id}/pay`),
+  complete: (id) => api.patch(`/trade-ins/${id}/complete`),
+};
+
+export const reviewAPI = {
+  create: (data) => api.post('/reviews', data),
+  getUserReviews: (userId) => api.get(`/reviews/${userId}`),
+};
+
+export const adminAPI = {
+  getOverview: () => api.get('/admin/overview'),
+  getPendingVerifications: () => api.get('/verifications/pending'),
+  verifyProduct: (id, data) => api.patch(`/verifications/${id}`, data),
+};
+
+export default api;
