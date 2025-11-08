@@ -28,7 +28,7 @@ function App() {
             <Route path="/barter" element={<Barter />} />
             <Route path="/trade-in" element={<TradeIn />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/add-product" element={<AddProduct />} /> {/* Tambah ini */}
+            <Route path="/add-product" element={<AddProduct />} /> 
           </Routes>
         </main>
         <Footer />
