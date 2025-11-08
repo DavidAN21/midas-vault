@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Tambah useNavigate
 import ProductCard from '../components/ProductCard';
 import Loader from '../components/Loader';
 import { productAPI } from '../services/api';
@@ -7,21 +7,34 @@ import { productAPI } from '../services/api';
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // Tambah navigate
+  const user = JSON.parse(localStorage.getItem('user') || '{}'); // Tambah user
 
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
-      try {
-        const response = await productAPI.getAll({ verified: 'true', limit: 6 });
-        setFeaturedProducts(response.data.data);
-      } catch (error) {
-        console.error('Error fetching featured products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFeaturedProducts();
   }, []);
+
+  const fetchFeaturedProducts = async () => {
+    try {
+      const response = await productAPI.getAll({ verified: 'true', limit: 6 });
+      setFeaturedProducts(response.data.data);
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fungsi handle mulai jual
+  const handleStartSelling = () => {
+    if (user.id) {
+      // Jika sudah login, langsung ke upload produk
+      navigate('/add-product');
+    } else {
+      // Jika belum login, ke register
+      navigate('/register');
+    }
+  };
 
   return (
     <div>
@@ -36,15 +49,16 @@ const Home = () => {
             Aman, mudah, dan menguntungkan!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/register"
+            {/* Ganti Link dengan button */}
+            <button
+              onClick={handleStartSelling}
               className="bg-midas-dark text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-black transition-colors"
             >
               Mulai Jual
-            </Link>
+            </button>
             <Link
               to="/marketplace"
-              className="bg-white text-midas-dark px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-gray-100 transition-colors"
+              className="bg-white text-midas-dark px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-gray-100 transition-colors text-center"
             >
               Telusuri Barang
             </Link>

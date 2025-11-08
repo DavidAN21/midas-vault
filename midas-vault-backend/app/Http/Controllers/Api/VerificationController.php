@@ -18,8 +18,10 @@ class VerificationController extends Controller
             ], 403);
         }
 
-        $products = Product::whereNull('verified_at')
-            ->with(['user', 'verifications'])
+        // Hanya ambil produk dengan status pending
+        $products = Product::where('verification_status', 'pending')
+            ->where('status', 'available')
+            ->with(['user'])
             ->latest()
             ->get();
 
@@ -43,40 +45,55 @@ class VerificationController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        if ($request->status === 'approved') {
-            $product->update([
-                'verified_by' => $request->user()->id,
-                'verified_at' => now(),
+        try {
+            if ($request->status === 'approved') {
+                $product->update([
+                    'verified_by' => $request->user()->id,
+                    'verified_at' => now(),
+                    'verification_status' => 'approved',
+                ]);
+                
+                $message = 'Produk berhasil diverifikasi! Sekarang muncul di marketplace.';
+            } else {
+                $product->update([
+                    'verification_status' => 'rejected',
+                ]);
+                
+                $message = 'Produk ditolak verifikasi. Tidak akan muncul di marketplace.';
+            }
+
+            // Selalu buat record verification
+            Verification::create([
+                'product_id' => $product->id,
+                'verifier_id' => $request->user()->id,
+                'status' => $request->status,
+                'notes' => $request->notes,
             ]);
-        } else {
-            $product->update([
-                'verified_by' => null,
-                'verified_at' => null,
+
+            return response()->json([
+                'success' => true,
+                'data' => $product->load(['user', 'verifier']),
+                'message' => $message
             ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Catat verifikasi
-        Verification::create([
-            'product_id' => $product->id,
-            'verifier_id' => $request->user()->id,
-            'status' => $request->status,
-            'notes' => $request->notes,
-        ]);
-
-        $message = $request->status === 'approved' 
-            ? 'Produk berhasil diverifikasi!' 
-            : 'Produk ditolak verifikasi.';
-
-        return response()->json([
-            'success' => true,
-            'data' => $product->load(['user', 'verifier']),
-            'message' => $message
-        ]);
     }
 
     public function verifiedProducts(Request $request)
     {
-        $products = Product::whereNotNull('verified_at')
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        $products = Product::where('verification_status', 'approved')
             ->with(['user', 'verifier'])
             ->latest()
             ->get();

@@ -12,7 +12,9 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['user', 'verifier']);
+        $query = Product::with(['user', 'verifier'])
+            ->where('verification_status', 'approved') // ✅ hanya tampil produk yang sudah disetujui admin
+            ->where('status', 'available');
 
         if ($request->has('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
@@ -26,12 +28,6 @@ class ProductController extends Controller
             $query->whereNotNull('verified_at');
         }
 
-        if ($request->has('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        } else {
-            $query->where('status', 'available');
-        }
-
         $products = $query->latest()->get();
 
         return response()->json([
@@ -39,11 +35,10 @@ class ProductController extends Controller
             'data' => $products
         ]);
     }
-    
 
     public function store(ProductRequest $request)
     {
-        // Handle image upload
+        // ✅ Upload gambar
         $imagePath = null;
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -51,6 +46,7 @@ class ProductController extends Controller
             $imagePath = $image->storeAs('products', $imageName, 'public');
         }
 
+        // ✅ Simpan produk dengan status verifikasi "pending"
         $product = Product::create([
             'user_id' => $request->user()->id,
             'name' => $request->name,
@@ -59,15 +55,15 @@ class ProductController extends Controller
             'condition' => $request->condition,
             'price' => $request->price,
             'image_url' => $imagePath ? Storage::url($imagePath) : '/images/default-product.jpg',
+            'verification_status' => 'pending', // Tambahan: produk baru menunggu verifikasi
         ]);
 
         return response()->json([
             'success' => true,
             'data' => $product->load('user'),
-            'message' => 'Produk berhasil diupload!'
+            'message' => 'Produk berhasil diupload! Menunggu verifikasi admin.'
         ], 201);
     }
-
 
     public function show(Product $product)
     {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { productAPI } from '../services/api';
 
-const AddProduct = () => {
+const EditProduct = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -14,31 +14,47 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.role === 'admin') {
-      alert('Admin tidak bisa upload produk');
-      navigate('/admin');
-      return;
-    }
-  }, [navigate]);
+  const { id } = useParams();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const categories = ['Fashion', 'Electronics', 'Books', 'Hobbies', 'Home', 'Other'];
 
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      const response = await productAPI.getById(id);
+      const product = response.data.data;
+
+      if (product.user_id !== user.id && user.role !== 'admin') {
+        alert('Anda tidak memiliki akses untuk mengedit produk ini');
+        navigate('/dashboard');
+        return;
+      }
+
+      setFormData({
+        name: product.name,
+        description: product.description,
+        category: product.category,
+        condition: product.condition,
+        price: product.price,
+        image: null
+      });
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      navigate('/dashboard');
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleImageChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
+    setFormData(prev => ({ ...prev, image: e.target.files[0] }));
   };
 
   const handleSubmit = async (e) => {
@@ -53,14 +69,14 @@ const AddProduct = () => {
       submitData.append('category', formData.category);
       submitData.append('condition', formData.condition);
       submitData.append('price', formData.price);
-      if (formData.image) {
-        submitData.append('image', formData.image);
-      }
+      submitData.append('_method', 'PUT');
+      if (formData.image) submitData.append('image', formData.image);
 
-      await productAPI.create(submitData);
+      await productAPI.update(id, submitData);
+      alert('Produk berhasil diupdate!');
       navigate('/dashboard');
     } catch (error) {
-      setError(error.response?.data?.message || 'Gagal upload produk');
+      setError(error.response?.data?.message || 'Gagal update produk');
     } finally {
       setLoading(false);
     }
@@ -70,7 +86,7 @@ const AddProduct = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-xl shadow-md p-6">
-          <h1 className="text-3xl font-bold text-midas-dark mb-6">Upload Produk</h1>
+          <h1 className="text-3xl font-bold text-midas-dark mb-6">Edit Produk</h1>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
@@ -80,46 +96,38 @@ const AddProduct = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nama Produk *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Nama Produk *</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-midas-gold"
-                placeholder="Contoh: Sepatu Nike Air Max"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-midas-gold"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Deskripsi *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi *</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-midas-gold"
-                placeholder="Jelaskan kondisi produk, kelebihan, dll..."
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-midas-gold"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kategori *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kategori *</label>
                 <select
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
                   required
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-midas-gold"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-midas-gold"
                 >
                   <option value="">Pilih Kategori</option>
                   {categories.map(cat => (
@@ -129,15 +137,13 @@ const AddProduct = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kondisi *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kondisi *</label>
                 <select
                   name="condition"
                   value={formData.condition}
                   onChange={handleChange}
                   required
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-midas-gold"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-midas-gold"
                 >
                   <option value="excellent">Sangat Baik</option>
                   <option value="good">Baik</option>
@@ -148,9 +154,7 @@ const AddProduct = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Harga (Rp) *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Harga (Rp) *</label>
               <input
                 type="number"
                 name="price"
@@ -158,25 +162,19 @@ const AddProduct = () => {
                 onChange={handleChange}
                 required
                 min="1000"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-midas-gold"
-                placeholder="Contoh: 250000"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-midas-gold"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gambar Produk *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Gambar Produk (Opsional)</label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                required
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-midas-gold"
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-midas-gold"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                Format: JPEG, PNG, JPG, GIF (Maks. 2MB)
-              </p>
+              <p className="text-sm text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah gambar</p>
             </div>
 
             <div className="flex space-x-4">
@@ -192,7 +190,7 @@ const AddProduct = () => {
                 disabled={loading}
                 className="flex-1 bg-midas-gold text-midas-dark py-3 rounded-xl font-semibold hover:bg-yellow-500 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Mengupload...' : 'Upload Produk'}
+                {loading ? 'Mengupdate...' : 'Update Produk'}
               </button>
             </div>
           </form>
@@ -202,4 +200,4 @@ const AddProduct = () => {
   );
 };
 
-export default AddProduct;
+export default EditProduct;

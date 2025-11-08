@@ -9,6 +9,10 @@ class Product extends Model
 {
     use HasFactory;
 
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+
     protected $fillable = [
         'user_id',
         'name',
@@ -20,6 +24,7 @@ class Product extends Model
         'verified_by',
         'verified_at',
         'status',
+        'verification_status', // Tambah kolom baru
     ];
 
     protected function casts(): array
@@ -72,11 +77,21 @@ class Product extends Model
 
     public function isVerified()
     {
-        return !is_null($this->verified_at);
+        return $this->verification_status === self::STATUS_APPROVED;
+    }
+
+    public function isPending()
+    {
+        return $this->verification_status === self::STATUS_PENDING;
+    }
+
+    public function isRejected()
+    {
+        return $this->verification_status === self::STATUS_REJECTED;
     }
 
     public function isAvailable()
     {
-        return $this->status === 'available';
+        return $this->status === 'available' && $this->isVerified();
     }
 }

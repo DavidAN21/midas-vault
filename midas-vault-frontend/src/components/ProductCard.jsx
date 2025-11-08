@@ -1,22 +1,25 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { transactionAPI } from '../services/api';
 
 const ProductCard = ({ product }) => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user.role === 'admin';
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('id-ID', {
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(price);
-  };
 
+  // ✅ Hanya produk verified yang bisa dibeli
   const handleBuy = async () => {
     if (!user.id) {
       alert('Silakan login terlebih dahulu!');
+      navigate('/login');
       return;
     }
 
@@ -25,14 +28,23 @@ const ProductCard = ({ product }) => {
       return;
     }
 
-    if (confirm(`Beli ${product.name} seharga ${formatPrice(product.price)}?`)) {
+    if (product.verification_status !== 'approved') {
+      alert('Produk ini belum terverifikasi!');
+      return;
+    }
+
+    if (product.status !== 'available') {
+      alert('Produk sudah tidak tersedia!');
+      return;
+    }
+
+    if (confirm(`Beli "${product.name}" seharga ${formatPrice(product.price)}?`)) {
       setLoading(true);
       try {
         const response = await transactionAPI.create({
-          product_id: product.id,
-          payment_method: 'transfer'
+          product_id: product.id
         });
-        alert('Transaksi berhasil! Silakan lanjutkan pembayaran.');
+        alert('✅ Transaksi berhasil! Produk masuk sistem escrow.');
         window.location.reload();
       } catch (error) {
         alert(error.response?.data?.message || 'Gagal melakukan transaksi');
@@ -60,43 +72,69 @@ const ProductCard = ({ product }) => {
           alt={product.name}
           className="w-full h-48 object-cover"
         />
-        {product.verified_at && (
+        {product.verification_status === 'approved' && (
           <div className="absolute top-2 right-2 bg-midas-gold text-midas-dark px-2 py-1 rounded-full text-xs font-semibold">
             ✓ Verified
           </div>
         )}
         <div className="absolute top-2 left-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(product.condition)}`}>
-            {product.condition === 'excellent' ? 'Sangat Baik' :
-             product.condition === 'good' ? 'Baik' :
-             product.condition === 'fair' ? 'Cukup' : 'Kurang Baik'}
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(product.condition)}`}
+          >
+            {product.condition === 'excellent'
+              ? 'Sangat Baik'
+              : product.condition === 'good'
+              ? 'Baik'
+              : product.condition === 'fair'
+              ? 'Cukup'
+              : 'Kurang Baik'}
           </span>
         </div>
       </div>
-      
+
       <div className="p-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
         <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-        
+
         <div className="flex items-center justify-between mb-3">
-          <span className="text-2xl font-bold text-midas-gold">{formatPrice(product.price)}</span>
+          <span className="text-2xl font-bold text-midas-gold">
+            {formatPrice(product.price)}
+          </span>
           <span className="text-sm text-gray-500 capitalize">{product.category}</span>
         </div>
-        
+
         <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
           <span>By: {product.user?.name}</span>
           <span>{new Date(product.created_at).toLocaleDateString('id-ID')}</span>
         </div>
-        
+
         <div className="flex space-x-2">
           <button
+            onClick={() => navigate(`/product/${product.id}`)}
+            className="flex-1 bg-gray-200 text-gray-700 text-center py-2 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+          >
+            Detail
+          </button>
+
+          <button
             onClick={handleBuy}
-            disabled={loading || product.status !== 'available' || user.id === product.user_id}
+            disabled={
+              loading ||
+              product.status !== 'available' ||
+              user.id === product.user_id ||
+              isAdmin
+            }
             className="flex-1 bg-midas-gold text-midas-dark text-center py-2 rounded-xl font-semibold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Memproses...' : 
-             product.status !== 'available' ? 'Terjual' :
-             user.id === product.user_id ? 'Produk Anda' : 'Beli Sekarang'}
+            {loading
+              ? 'Memproses...'
+              : product.status !== 'available'
+              ? 'Terjual'
+              : user.id === product.user_id
+              ? 'Produk Anda'
+              : isAdmin
+              ? 'Admin'
+              : 'Beli Sekarang'}
           </button>
         </div>
       </div>

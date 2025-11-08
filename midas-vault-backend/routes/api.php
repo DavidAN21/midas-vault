@@ -33,7 +33,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('transactions', TransactionController::class)->only(['store', 'show']);
         Route::get('/my-transactions', [TransactionController::class, 'myTransactions']);
         Route::patch('/transactions/{transaction}/confirm', [TransactionController::class, 'confirm']);
-        Route::patch('/transactions/{transaction}/refund', [TransactionController::class, 'refund']);
+        Route::patch('/transactions/{transaction}/cancel', [TransactionController::class, 'cancel']);
 
         // Barters
         Route::apiResource('barters', BarterController::class)->only(['store', 'show']);
@@ -51,11 +51,12 @@ Route::prefix('v1')->group(function () {
         // Reviews
         Route::apiResource('reviews', ReviewController::class)->only(['store']);
 
-        // Admin routes
+        // ✅ VERIFICATION ROUTES - PASTIKAN DI DALAM MIDDLEWARE ADMIN
         Route::middleware('admin')->group(function () {
             Route::get('/admin/overview', [AdminController::class, 'overview']);
             Route::get('/verifications/pending', [VerificationController::class, 'pending']);
             Route::patch('/verifications/{product}', [VerificationController::class, 'update']);
+            Route::get('/verifications/verified', [VerificationController::class, 'verifiedProducts']);
         });
     });
 });

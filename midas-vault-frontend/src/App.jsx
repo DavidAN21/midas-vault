@@ -11,6 +11,9 @@ import Barter from './pages/Barter';
 import TradeIn from './pages/TradeIn';
 import Contact from './pages/Contact';
 import AddProduct from './pages/AddProduct';
+import EditProduct from './pages/EditProduct';
+import ProductDetail from './pages/ProductDetail';
+import AdminDashboard from './pages/AdminDashboard';
 
 
 function App() {
@@ -25,10 +28,13 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/barter" element={<Barter />} />
             <Route path="/trade-in" element={<TradeIn />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/add-product" element={<AddProduct />} /> 
+            <Route path="/add-product" element={<AddProduct />} />
+            <Route path="/edit-product/:id" element={<EditProduct />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
           </Routes>
         </main>
         <Footer />

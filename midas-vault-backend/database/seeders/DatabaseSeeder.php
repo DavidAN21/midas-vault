@@ -80,6 +80,8 @@ class DatabaseSeeder extends Seeder
             'image_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500',
             'verified_at' => now(),
             'verified_by' => $admin->id,
+            'verification_status' => 'approved'
+            
         ]);
 
         $product2 = Product::create([
@@ -92,6 +94,7 @@ class DatabaseSeeder extends Seeder
             'image_url' => 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500',
             'verified_at' => now(),
             'verified_by' => $admin->id,
+            'verification_status' => 'approved',
         ]);
 
         // Products for seller2
@@ -105,6 +108,7 @@ class DatabaseSeeder extends Seeder
             'image_url' => 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500',
             'verified_at' => now(),
             'verified_by' => $admin->id,
+            'verification_status' => 'approved',
         ]);
 
         $product4 = Product::create([

@@ -12,39 +12,50 @@ const Navbar = () => {
     navigate('/');
   };
 
+  // Jika admin, sembunyikan menu marketplace dan jual beli
+  const isAdmin = user.role === 'admin';
+
   return (
     <nav className="bg-midas-dark text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to={isAdmin ? "/admin" : "/"} className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-midas-gold rounded-full flex items-center justify-center">
                 <span className="text-midas-dark font-bold text-sm">M</span>
               </div>
-              <span className="font-bold text-xl">Midas Vault</span>
+              <span className="font-bold text-xl">Midas Vault {isAdmin && "(Admin)"}</span>
             </Link>
           </div>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="hover:text-midas-gold transition-colors">Home</Link>
-            <Link to="/marketplace" className="hover:text-midas-gold transition-colors">Marketplace</Link>
-            {user.id && user.role === 'seller' && (
-                <Link to="/add-product" className="hover:text-midas-gold transition-colors">
-                    Upload Produk
-                </Link>
+            {!isAdmin ? (
+              // Menu untuk user biasa
+              <>
+                <Link to="/" className="hover:text-midas-gold transition-colors">Home</Link>
+                <Link to="/marketplace" className="hover:text-midas-gold transition-colors">Marketplace</Link>
+                {user.id && user.role === 'seller' && (
+                  <Link to="/add-product" className="hover:text-midas-gold transition-colors">Upload Produk</Link>
+                )}
+              </>
+            ) : (
+              // Menu khusus admin
+              <>
+                <Link to="/admin" className="hover:text-midas-gold transition-colors">Dashboard Admin</Link>
+                <Link to="/verifications" className="hover:text-midas-gold transition-colors">Verifikasi Produk</Link>
+              </>
             )}
-            <Link to="/barter" className="hover:text-midas-gold transition-colors">Barter</Link>
-            <Link to="/trade-in" className="hover:text-midas-gold transition-colors">Tukar Tambah</Link>
             
             {user.id ? (
               <>
-                <Link to="/dashboard" className="hover:text-midas-gold transition-colors">Dashboard</Link>
-                {user.role === 'admin' && (
-                  <Link to="/admin" className="hover:text-midas-gold transition-colors">Admin</Link>
+                {!isAdmin && (
+                  <Link to="/dashboard" className="hover:text-midas-gold transition-colors">Dashboard</Link>
                 )}
                 <div className="flex items-center space-x-4">
-                  <span className="text-midas-gold">Hi, {user.name}</span>
+                  <span className="text-midas-gold">
+                    {isAdmin ? '👑 Admin' : `Hi, ${user.name}`}
+                  </span>
                   <button
                     onClick={handleLogout}
                     className="bg-midas-gold text-midas-dark px-4 py-2 rounded-2xl font-semibold hover:bg-yellow-500 transition-colors"
@@ -82,19 +93,32 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 space-y-4">
-            <Link to="/" className="block hover:text-midas-gold transition-colors">Home</Link>
-            <Link to="/marketplace" className="block hover:text-midas-gold transition-colors">Marketplace</Link>
-            <Link to="/barter" className="block hover:text-midas-gold transition-colors">Barter</Link>
-            <Link to="/trade-in" className="block hover:text-midas-gold transition-colors">Tukar Tambah</Link>
+            {!isAdmin ? (
+              // Menu mobile untuk user biasa
+              <>
+                <Link to="/" className="block hover:text-midas-gold transition-colors">Home</Link>
+                <Link to="/marketplace" className="block hover:text-midas-gold transition-colors">Marketplace</Link>
+                {user.id && user.role === 'seller' && (
+                  <Link to="/add-product" className="block hover:text-midas-gold transition-colors">Upload Produk</Link>
+                )}
+              </>
+            ) : (
+              // Menu mobile khusus admin
+              <>
+                <Link to="/admin" className="block hover:text-midas-gold transition-colors">Dashboard Admin</Link>
+                <Link to="/verifications" className="block hover:text-midas-gold transition-colors">Verifikasi Produk</Link>
+              </>
+            )}
             
             {user.id ? (
               <>
-                <Link to="/dashboard" className="block hover:text-midas-gold transition-colors">Dashboard</Link>
-                {user.role === 'admin' && (
-                  <Link to="/admin" className="block hover:text-midas-gold transition-colors">Admin</Link>
+                {!isAdmin && (
+                  <Link to="/dashboard" className="block hover:text-midas-gold transition-colors">Dashboard</Link>
                 )}
                 <div className="pt-4 border-t border-gray-600">
-                  <span className="block text-midas-gold mb-2">Hi, {user.name}</span>
+                  <span className="block text-midas-gold mb-2">
+                    {isAdmin ? '👑 Admin' : `Hi, ${user.name}`}
+                  </span>
                   <button
                     onClick={handleLogout}
                     className="bg-midas-gold text-midas-dark px-4 py-2 rounded-2xl font-semibold hover:bg-yellow-500 transition-colors w-full"

@@ -48,9 +48,11 @@ export const productAPI = {
 };
 
 export const transactionAPI = {
-  getPending: () => api.get('/verifications/pending'),
-  verifyProduct: (id, data) => api.patch(`/verifications/${id}`, data),
-  getVerified: () => api.get('/verifications/verified'),
+  create: (data) => api.post('/transactions', data),
+  getMyTransactions: () => api.get('/my-transactions'),
+  confirm: (id) => api.patch(`/transactions/${id}/confirm`),
+  cancel: (id) => api.patch(`/transactions/${id}/cancel`),
+  getById: (id) => api.get(`/transactions/${id}`),
 };
 
 export const barterAPI = {
@@ -71,6 +73,13 @@ export const tradeInAPI = {
 export const reviewAPI = {
   create: (data) => api.post('/reviews', data),
   getUserReviews: (userId) => api.get(`/reviews/${userId}`),
+};
+
+// ✅ TAMBAHKAN verificationAPI YANG MISSING
+export const verificationAPI = {
+  getPending: () => api.get('/verifications/pending'),
+  verifyProduct: (id, data) => api.patch(`/verifications/${id}`, data),
+  getVerified: () => api.get('/verifications/verified'),
 };
 
 export const adminAPI = {
