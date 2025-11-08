@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -38,9 +39,18 @@ class ProductController extends Controller
             'data' => $products
         ]);
     }
+    
 
     public function store(ProductRequest $request)
     {
+        // Handle image upload
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $imagePath = $image->storeAs('products', $imageName, 'public');
+        }
+
         $product = Product::create([
             'user_id' => $request->user()->id,
             'name' => $request->name,
@@ -48,14 +58,16 @@ class ProductController extends Controller
             'category' => $request->category,
             'condition' => $request->condition,
             'price' => $request->price,
-            'image_url' => $request->image_url,
+            'image_url' => $imagePath ? Storage::url($imagePath) : '/images/default-product.jpg',
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => $product->load('user')
+            'data' => $product->load('user'),
+            'message' => 'Produk berhasil diupload!'
         ], 201);
     }
+
 
     public function show(Product $product)
     {

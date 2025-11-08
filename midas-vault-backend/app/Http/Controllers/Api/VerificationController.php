@@ -19,7 +19,7 @@ class VerificationController extends Controller
         }
 
         $products = Product::whereNull('verified_at')
-            ->with('user')
+            ->with(['user', 'verifications'])
             ->latest()
             ->get();
 
@@ -40,7 +40,7 @@ class VerificationController extends Controller
 
         $request->validate([
             'status' => 'required|in:approved,rejected',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         if ($request->status === 'approved') {
@@ -48,8 +48,14 @@ class VerificationController extends Controller
                 'verified_by' => $request->user()->id,
                 'verified_at' => now(),
             ]);
+        } else {
+            $product->update([
+                'verified_by' => null,
+                'verified_at' => null,
+            ]);
         }
 
+        // Catat verifikasi
         Verification::create([
             'product_id' => $product->id,
             'verifier_id' => $request->user()->id,
@@ -57,9 +63,27 @@ class VerificationController extends Controller
             'notes' => $request->notes,
         ]);
 
+        $message = $request->status === 'approved' 
+            ? 'Produk berhasil diverifikasi!' 
+            : 'Produk ditolak verifikasi.';
+
         return response()->json([
             'success' => true,
-            'data' => $product->load('verifier')
+            'data' => $product->load(['user', 'verifier']),
+            'message' => $message
+        ]);
+    }
+
+    public function verifiedProducts(Request $request)
+    {
+        $products = Product::whereNotNull('verified_at')
+            ->with(['user', 'verifier'])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $products
         ]);
     }
 }

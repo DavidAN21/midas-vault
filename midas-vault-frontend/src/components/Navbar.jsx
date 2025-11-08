@@ -29,6 +29,11 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="hover:text-midas-gold transition-colors">Home</Link>
             <Link to="/marketplace" className="hover:text-midas-gold transition-colors">Marketplace</Link>
+            {user.id && user.role === 'seller' && (
+                <Link to="/add-product" className="hover:text-midas-gold transition-colors">
+                    Upload Produk
+                </Link>
+            )}
             <Link to="/barter" className="hover:text-midas-gold transition-colors">Barter</Link>
             <Link to="/trade-in" className="hover:text-midas-gold transition-colors">Tukar Tambah</Link>
             

@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import Barter from './pages/Barter';
 import TradeIn from './pages/TradeIn';
 import Contact from './pages/Contact';
+import AddProduct from './pages/AddProduct';
+
 
 function App() {
   return (
@@ -26,6 +28,7 @@ function App() {
             <Route path="/barter" element={<Barter />} />
             <Route path="/trade-in" element={<TradeIn />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/add-product" element={<AddProduct />} /> {/* Tambah ini */}
           </Routes>
         </main>
         <Footer />

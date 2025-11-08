@@ -40,16 +40,17 @@ export const productAPI = {
   getAll: (params = {}) => api.get('/products', { params }),
   getMyProducts: () => api.get('/my-products'),
   getById: (id) => api.get(`/products/${id}`),
-  create: (data) => api.post('/products', data),
+  create: (data) => api.post('/products', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   update: (id, data) => api.put(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
 };
 
 export const transactionAPI = {
-  create: (data) => api.post('/transactions', data),
-  getMyTransactions: () => api.get('/my-transactions'),
-  confirm: (id) => api.patch(`/transactions/${id}/confirm`),
-  refund: (id) => api.patch(`/transactions/${id}/refund`),
+  getPending: () => api.get('/verifications/pending'),
+  verifyProduct: (id, data) => api.patch(`/verifications/${id}`, data),
+  getVerified: () => api.get('/verifications/verified'),
 };
 
 export const barterAPI = {

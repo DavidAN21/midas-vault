@@ -1,13 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { transactionAPI } from '../services/api';
 
 const ProductCard = ({ product }) => {
+  const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleBuy = async () => {
+    if (!user.id) {
+      alert('Silakan login terlebih dahulu!');
+      return;
+    }
+
+    if (user.id === product.user_id) {
+      alert('Tidak bisa membeli produk sendiri!');
+      return;
+    }
+
+    if (confirm(`Beli ${product.name} seharga ${formatPrice(product.price)}?`)) {
+      setLoading(true);
+      try {
+        const response = await transactionAPI.create({
+          product_id: product.id,
+          payment_method: 'transfer'
+        });
+        alert('Transaksi berhasil! Silakan lanjutkan pembayaran.');
+        window.location.reload();
+      } catch (error) {
+        alert(error.response?.data?.message || 'Gagal melakukan transaksi');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const getConditionColor = (condition) => {
@@ -24,7 +56,7 @@ const ProductCard = ({ product }) => {
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:scale-105 transition-all duration-300">
       <div className="relative">
         <img
-          src={product.image_url}
+          src={product.image_url || '/images/default-product.jpg'}
           alt={product.name}
           className="w-full h-48 object-cover"
         />
@@ -35,7 +67,9 @@ const ProductCard = ({ product }) => {
         )}
         <div className="absolute top-2 left-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(product.condition)}`}>
-            {product.condition}
+            {product.condition === 'excellent' ? 'Sangat Baik' :
+             product.condition === 'good' ? 'Baik' :
+             product.condition === 'fair' ? 'Cukup' : 'Kurang Baik'}
           </span>
         </div>
       </div>
@@ -55,14 +89,14 @@ const ProductCard = ({ product }) => {
         </div>
         
         <div className="flex space-x-2">
-          <Link
-            to={`/marketplace/${product.id}`}
-            className="flex-1 bg-midas-gold text-midas-dark text-center py-2 rounded-xl font-semibold hover:bg-yellow-500 transition-colors"
+          <button
+            onClick={handleBuy}
+            disabled={loading || product.status !== 'available' || user.id === product.user_id}
+            className="flex-1 bg-midas-gold text-midas-dark text-center py-2 rounded-xl font-semibold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Beli
-          </Link>
-          <button className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
-            Barter
+            {loading ? 'Memproses...' : 
+             product.status !== 'available' ? 'Terjual' :
+             user.id === product.user_id ? 'Produk Anda' : 'Beli Sekarang'}
           </button>
         </div>
       </div>
