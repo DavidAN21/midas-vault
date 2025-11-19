@@ -50,4 +50,20 @@ class TradeIn extends Model
     {
         return $this->hasOne(Review::class);
     }
+
+    // Helper methods
+    public function isPending()
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isAccepted()
+    {
+        return $this->status === 'accepted';
+    }
+
+    public function isCompleted()
+    {
+        return $this->status === 'completed';
+    }
 }

@@ -24,7 +24,14 @@ class Product extends Model
         'verified_by',
         'verified_at',
         'status',
-        'verification_status', // Tambah kolom baru
+        'verification_status',
+
+        // Tambahan baru
+        'allow_barter',
+        'barter_preferences',
+        'allow_trade_in',
+        'trade_in_value',
+        'trade_in_preferences',
     ];
 
     protected function casts(): array
@@ -80,6 +87,16 @@ class Product extends Model
         return $this->verification_status === self::STATUS_APPROVED;
     }
 
+    public function makeAvailable()
+    {
+        $this->update(['status' => 'available']);
+    }
+
+    public function makeSold()
+    {
+        $this->update(['status' => 'sold']);
+    }
+
     public function isPending()
     {
         return $this->verification_status === self::STATUS_PENDING;
@@ -93,5 +110,24 @@ class Product extends Model
     public function isAvailable()
     {
         return $this->status === 'available' && $this->isVerified();
+    }
+
+    // ===============================
+    // Tambahan method baru
+    // ===============================
+
+    public function allowsBarter()
+    {
+        return $this->allow_barter && $this->isVerified() && $this->isAvailable();
+    }
+
+    public function allowsTradeIn()
+    {
+        return $this->allow_trade_in && $this->isVerified() && $this->isAvailable();
+    }
+
+    public function getTradeInValue()
+    {
+        return $this->trade_in_value ?? ($this->price * 0.7); // Default 70%
     }
 }

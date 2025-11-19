@@ -12,18 +12,33 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Debug request
+  console.log('API Request:', {
+    method: config.method,
+    url: config.url,
+    data: config.data,
+    headers: config.headers
+  });
+
   return config;
 });
 
 // Handle token expiration
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Response Success:', {
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
+    console.log('API Response Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
     return Promise.reject(error);
   }
 );
@@ -40,9 +55,10 @@ export const productAPI = {
   getAll: (params = {}) => api.get('/products', { params }),
   getMyProducts: () => api.get('/my-products'),
   getById: (id) => api.get(`/products/${id}`),
-  create: (data) => api.post('/products', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  create: (data) =>
+    api.post('/products', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   update: (id, data) => api.put(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
 };
@@ -55,33 +71,46 @@ export const transactionAPI = {
   getById: (id) => api.get(`/transactions/${id}`),
 };
 
+// =====================
+// 🔄 UPDATED BARTER API
+// =====================
 export const barterAPI = {
   create: (data) => api.post('/barters', data),
   getMyBarters: () => api.get('/my-barters'),
   accept: (id) => api.patch(`/barters/${id}/accept`),
+  reject: (id) => api.patch(`/barters/${id}/reject`),
   complete: (id) => api.patch(`/barters/${id}/complete`),
+  cancel: (id) => api.patch(`/barters/${id}/cancel`), // ✅ TAMBAH INI
 };
 
+// =======================
+// 🔄 UPDATED TRADE-IN API
+// =======================
 export const tradeInAPI = {
   create: (data) => api.post('/trade-ins', data),
   getMyTradeIns: () => api.get('/my-trade-ins'),
-  agree: (id) => api.patch(`/trade-ins/${id}/agree`),
+  accept: (id) => api.patch(`/trade-ins/${id}/accept`),
+  reject: (id) => api.patch(`/trade-ins/${id}/reject`),
   pay: (id) => api.patch(`/trade-ins/${id}/pay`),
-  complete: (id) => api.patch(`/trade-ins/${id}/complete`),
+  cancel: (id) => api.patch(`/trade-ins/${id}/cancel`), // Tambah ini
 };
 
+// =======================
+// VERIFICATION & ADMIN API
+// =======================
 export const reviewAPI = {
   create: (data) => api.post('/reviews', data),
   getUserReviews: (userId) => api.get(`/reviews/${userId}`),
 };
 
-// ✅ TAMBAHKAN verificationAPI YANG MISSING
+// Verification API
 export const verificationAPI = {
   getPending: () => api.get('/verifications/pending'),
   verifyProduct: (id, data) => api.patch(`/verifications/${id}`, data),
   getVerified: () => api.get('/verifications/verified'),
 };
 
+// Admin API
 export const adminAPI = {
   getOverview: () => api.get('/admin/overview'),
   getPendingVerifications: () => api.get('/verifications/pending'),

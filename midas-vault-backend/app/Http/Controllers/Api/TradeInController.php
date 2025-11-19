@@ -16,31 +16,46 @@ class TradeInController extends Controller
             'old_product_id' => 'required|exists:products,id',
         ]);
 
-        $newProduct = Product::findOrFail($request->new_product_id);
-        $oldProduct = Product::findOrFail($request->old_product_id);
+        // DEBUG
+        \Log::info('TradeIn Store Request:', $request->all());
 
+        $newProduct = Product::with('user')->findOrFail($request->new_product_id);
+        $oldProduct = Product::with('user')->findOrFail($request->old_product_id);
+
+        // Validasi
         if ($oldProduct->user_id !== $request->user()->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only trade-in your own products'
+                'message' => 'Anda hanya bisa menukar produk sendiri'
             ], 400);
         }
 
         if ($newProduct->user_id === $request->user()->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot trade-in with your own product'
+                'message' => 'Tidak bisa tukar tambah dengan produk sendiri'
+            ], 400);
+        }
+
+        if (!$newProduct->allowsTradeIn()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Produk ini tidak menerima tukar tambah'
             ], 400);
         }
 
         if (!$newProduct->isAvailable() || !$oldProduct->isAvailable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'One or both products are not available'
+                'message' => 'Salah satu produk sudah tidak tersedia'
             ], 400);
         }
 
-        $priceDifference = $newProduct->price - $oldProduct->price;
+        // Hitung selisih harga berdasarkan harga asli produk
+        $newProductValue = $newProduct->price;
+        $oldProductValue = $oldProduct->price;
+        
+        $priceDifference = max(0, $newProductValue - $oldProductValue);
 
         $tradeIn = TradeIn::create([
             'buyer_id' => $request->user()->id,
@@ -48,16 +63,20 @@ class TradeInController extends Controller
             'old_product_id' => $oldProduct->id,
             'new_product_id' => $newProduct->id,
             'price_difference' => $priceDifference,
-            'status' => 'negotiation',
+            'status' => 'pending',
         ]);
+
+        // DEBUG
+        \Log::info('TradeIn Created:', $tradeIn->toArray());
 
         return response()->json([
             'success' => true,
-            'data' => $tradeIn->load(['buyer', 'seller', 'oldProduct', 'newProduct'])
+            'data' => $tradeIn->load(['buyer', 'seller', 'oldProduct', 'newProduct']),
+            'message' => 'Penawaran tukar tambah berhasil dikirim!'
         ], 201);
     }
 
-    public function agree(Request $request, TradeIn $tradeIn)
+    public function accept(Request $request, TradeIn $tradeIn)
     {
         if ($tradeIn->seller_id !== $request->user()->id) {
             return response()->json([
@@ -66,11 +85,54 @@ class TradeInController extends Controller
             ], 403);
         }
 
-        $tradeIn->update(['status' => 'agreed']);
+        $tradeIn->update(['status' => 'accepted']);
 
         return response()->json([
             'success' => true,
-            'data' => $tradeIn
+            'data' => $tradeIn,
+            'message' => 'Penawaran tukar tambah diterima! Silakan lanjutkan pembayaran.'
+        ]);
+    }
+
+    public function reject(Request $request, TradeIn $tradeIn)
+    {
+        if ($tradeIn->seller_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        $tradeIn->update(['status' => 'rejected']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tradeIn,
+            'message' => 'Penawaran tukar tambah ditolak!'
+        ]);
+    }
+
+    public function cancel(Request $request, TradeIn $tradeIn)
+    {
+        if (!in_array($request->user()->id, [$tradeIn->buyer_id, $tradeIn->seller_id])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Kembalikan status produk ke available
+        if ($tradeIn->status === 'accepted') {
+            $tradeIn->oldProduct->makeAvailable();
+            $tradeIn->newProduct->makeAvailable();
+        }
+
+        $tradeIn->update(['status' => 'cancelled']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tradeIn,
+            'message' => 'Tukar tambah dibatalkan! Produk kembali tersedia di marketplace.'
         ]);
     }
 
@@ -83,34 +145,26 @@ class TradeInController extends Controller
             ], 403);
         }
 
+        if ($tradeIn->status !== 'accepted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Penawaran belum diterima'
+            ], 400);
+        }
+
         $tradeIn->update([
             'payment_status' => 'paid',
             'status' => 'completed',
         ]);
 
+        // Update status produk
         $tradeIn->oldProduct->update(['status' => 'traded']);
         $tradeIn->newProduct->update(['status' => 'traded']);
 
         return response()->json([
             'success' => true,
-            'data' => $tradeIn
-        ]);
-    }
-
-    public function complete(Request $request, TradeIn $tradeIn)
-    {
-        if (!in_array($request->user()->id, [$tradeIn->buyer_id, $tradeIn->seller_id])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        $tradeIn->update(['status' => 'completed']);
-
-        return response()->json([
-            'success' => true,
-            'data' => $tradeIn
+            'data' => $tradeIn,
+            'message' => 'Pembayaran berhasil! Tukar tambah selesai.'
         ]);
     }
 

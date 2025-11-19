@@ -14,7 +14,13 @@ return new class extends Migration
             $table->foreignId('seller_id')->constrained('users');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 10, 2);
-            $table->enum('status', ['pending', 'escrow', 'completed', 'refunded'])->default('pending');
+            $table->enum('status', [
+                'pending', 
+                'escrow', 
+                'completed', 
+                'cancelled',  // PASTIKAN ADA 'cancelled'
+                'refunded'
+            ])->default('pending');
             $table->string('payment_reference')->nullable();
             $table->string('payment_method')->default('manual');
             $table->timestamps();

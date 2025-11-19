@@ -72,11 +72,15 @@ const ProductCard = ({ product }) => {
           alt={product.name}
           className="w-full h-48 object-cover"
         />
+
+        {/* Verified Badge */}
         {product.verification_status === 'approved' && (
           <div className="absolute top-2 right-2 bg-midas-gold text-midas-dark px-2 py-1 rounded-full text-xs font-semibold">
             ✓ Verified
           </div>
         )}
+
+        {/* Condition Badge */}
         <div className="absolute top-2 left-2">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionColor(product.condition)}`}
@@ -90,7 +94,23 @@ const ProductCard = ({ product }) => {
               : 'Kurang Baik'}
           </span>
         </div>
+
+        {/* Barter & Trade-In Badges */}
+        <div className="absolute top-10 left-2 flex space-x-1">
+          {product.allow_barter && (
+            <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow">
+              ⚖️ Barter
+            </span>
+          )}
+
+          {product.allow_trade_in && (
+            <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow">
+              🔄 Trade-In
+            </span>
+          )}
+        </div>
       </div>
+
 
       <div className="p-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>

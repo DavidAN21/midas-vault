@@ -16,6 +16,13 @@ class Barter extends Model
         'receiver_product_id',
         'status',
         'notes',
+        'requester_confirmed',
+        'receiver_confirmed',
+    ];
+
+    protected $casts = [
+        'requester_confirmed' => 'boolean',
+        'receiver_confirmed' => 'boolean',
     ];
 
     public function requester()
@@ -38,8 +45,54 @@ class Barter extends Model
         return $this->belongsTo(Product::class, 'receiver_product_id');
     }
 
-    public function review()
+    // ✅ TAMBAHKAN METHOD INI
+    public function isCompleted()
     {
-        return $this->hasOne(Review::class);
+        return $this->requester_confirmed && $this->receiver_confirmed;
+    }
+
+    // ✅ Method helper untuk cek status
+    public function isPending()
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isAccepted()
+    {
+        return $this->status === 'accepted';
+    }
+
+    public function isRejected()
+    {
+        return $this->status === 'rejected';
+    }
+
+    public function isCancelled()
+    {
+        return $this->status === 'cancelled';
+    }
+
+    // ✅ Method untuk cek konfirmasi user
+    public function isConfirmedByUser($userId)
+    {
+        if ($this->requester_id === $userId) {
+            return $this->requester_confirmed;
+        }
+        if ($this->receiver_id === $userId) {
+            return $this->receiver_confirmed;
+        }
+        return false;
+    }
+
+    // ✅ Method untuk konfirmasi oleh user
+    public function confirmByUser($userId)
+    {
+        if ($this->requester_id === $userId) {
+            $this->update(['requester_confirmed' => true]);
+        } elseif ($this->receiver_id === $userId) {
+            $this->update(['receiver_confirmed' => true]);
+        }
+        
+        return $this->refresh();
     }
 }

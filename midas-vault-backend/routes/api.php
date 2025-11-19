@@ -35,23 +35,27 @@ Route::prefix('v1')->group(function () {
         Route::patch('/transactions/{transaction}/confirm', [TransactionController::class, 'confirm']);
         Route::patch('/transactions/{transaction}/cancel', [TransactionController::class, 'cancel']);
 
+        
         // Barters
         Route::apiResource('barters', BarterController::class)->only(['store', 'show']);
         Route::get('/my-barters', [BarterController::class, 'myBarters']);
         Route::patch('/barters/{barter}/accept', [BarterController::class, 'accept']);
+        Route::patch('/barters/{barter}/reject', [BarterController::class, 'reject']);
         Route::patch('/barters/{barter}/complete', [BarterController::class, 'complete']);
+        Route::patch('/barters/{barter}/cancel', [BarterController::class, 'cancel']); // ✅ PASTIKAN ADA
 
         // Trade-ins
         Route::apiResource('trade-ins', TradeInController::class)->only(['store', 'show']);
         Route::get('/my-trade-ins', [TradeInController::class, 'myTradeIns']);
-        Route::patch('/trade-ins/{tradeIn}/agree', [TradeInController::class, 'agree']);
+        Route::patch('/trade-ins/{tradeIn}/accept', [TradeInController::class, 'accept']);
+        Route::patch('/trade-ins/{tradeIn}/reject', [TradeInController::class, 'reject']);
         Route::patch('/trade-ins/{tradeIn}/pay', [TradeInController::class, 'pay']);
-        Route::patch('/trade-ins/{tradeIn}/complete', [TradeInController::class, 'complete']);
+        Route::patch('/trade-ins/{tradeIn}/cancel', [TradeInController::class, 'cancel']); // Tambah ini
 
         // Reviews
         Route::apiResource('reviews', ReviewController::class)->only(['store']);
 
-        // ✅ VERIFICATION ROUTES - PASTIKAN DI DALAM MIDDLEWARE ADMIN
+        // Admin Verification
         Route::middleware('admin')->group(function () {
             Route::get('/admin/overview', [AdminController::class, 'overview']);
             Route::get('/verifications/pending', [VerificationController::class, 'pending']);
