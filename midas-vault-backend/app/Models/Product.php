@@ -21,12 +21,13 @@ class Product extends Model
         'condition',
         'price',
         'image_url',
+
         'verified_by',
         'verified_at',
         'status',
         'verification_status',
 
-        // Tambahan baru
+        // New fields
         'allow_barter',
         'barter_preferences',
         'allow_trade_in',
@@ -34,13 +35,16 @@ class Product extends Model
         'trade_in_preferences',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'price' => 'decimal:2',
-            'verified_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'price' => 'decimal:2',
+        'verified_at' => 'datetime',
+        'allow_barter' => 'boolean',
+        'allow_trade_in' => 'boolean',
+    ];
+
+    // ============================
+    // RELATIONSHIPS
+    // ============================
 
     public function user()
     {
@@ -82,19 +86,13 @@ class Product extends Model
         return $this->hasMany(Verification::class);
     }
 
+    // ============================
+    // STATUS CHECKERS
+    // ============================
+
     public function isVerified()
     {
         return $this->verification_status === self::STATUS_APPROVED;
-    }
-
-    public function makeAvailable()
-    {
-        $this->update(['status' => 'available']);
-    }
-
-    public function makeSold()
-    {
-        $this->update(['status' => 'sold']);
     }
 
     public function isPending()
@@ -107,27 +105,89 @@ class Product extends Model
         return $this->verification_status === self::STATUS_REJECTED;
     }
 
-    public function isAvailable()
+    // ============================
+    // TRANSACTION CHECKERS
+    // ============================
+
+    public function hasActiveTransactions()
     {
-        return $this->status === 'available' && $this->isVerified();
+        return $this->transactions()
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->exists();
     }
 
-    // ===============================
-    // Tambahan method baru
-    // ===============================
+    public function hasAnyTransactions()
+    {
+        return $this->transactions()->exists() ||
+               $this->bartersAsRequester()->exists() ||
+               $this->bartersAsReceiver()->exists() ||
+               $this->tradeInsAsOld()->exists() ||
+               $this->tradeInsAsNew()->exists();
+    }
+
+    // ============================
+    // PRODUCT AVAILABILITY
+    // ============================
+
+    public function makeAvailable()
+    {
+        $this->update(['status' => 'available']);
+    }
+
+    public function makeSold()
+    {
+        $this->update(['status' => 'sold']);
+    }
+
+    public function isAvailable()
+    {
+        return $this->status === 'available'
+            && $this->isVerified()
+            && !$this->hasActiveTransactions(); // FINAL VERSION
+    }
+
+    // ============================
+    // BARTER & TRADE-IN LOGIC
+    // ============================
 
     public function allowsBarter()
     {
-        return $this->allow_barter && $this->isVerified() && $this->isAvailable();
+        return $this->allow_barter
+            && $this->isVerified()
+            && $this->isAvailable();
     }
 
     public function allowsTradeIn()
     {
-        return $this->allow_trade_in && $this->isVerified() && $this->isAvailable();
+        return $this->allow_trade_in
+            && $this->isVerified()
+            && $this->isAvailable();
     }
 
     public function getTradeInValue()
     {
-        return $this->trade_in_value ?? ($this->price * 0.7); // Default 70%
+        return $this->trade_in_value ?? ($this->price * 0.7);
+    }
+        public function getImageUrlAttribute($value)
+    {
+        if (!$value) {
+            return asset('/images/default-product.jpg');
+        }
+        
+        // Jika sudah full URL, return langsung
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+        
+        // Jika relative path, convert ke full URL
+        if (str_starts_with($value, '/storage/')) {
+            return asset($value);
+        }
+        
+        if (str_starts_with($value, 'products/')) {
+            return asset('storage/' . $value);
+        }
+        
+        return asset($value);
     }
 }

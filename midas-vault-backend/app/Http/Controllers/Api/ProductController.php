@@ -90,14 +90,36 @@ class ProductController extends Controller
     // ========================================
     // STORE (Sudah termasuk barter & trade-in)
     // ========================================
+    // Di ProductController.php - method store()
+    // Di ProductController.php - method store()
     public function store(ProductRequest $request)
     {
         // Upload image
-        $imagePath = null;
+        $imageUrl = '/images/default-product.jpg';
+        
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $imagePath = $file->storeAs('products', $fileName, 'public');
+            try {
+                $file = $request->file('image');
+                $fileName = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
+                
+                // Simpan file
+                $path = $file->storeAs('products', $fileName, 'public');
+                
+                // 🔥 PASTIKAN URL BENAR
+                $imageUrl = asset('storage/' . $path); // atau Storage::url($path)
+                
+                \Log::info('🖼️ Image upload details:', [
+                    'original_name' => $file->getClientOriginalName(),
+                    'stored_name' => $fileName,
+                    'storage_path' => $path,
+                    'image_url' => $imageUrl,
+                    'asset_url' => asset('storage/' . $path),
+                    'storage_url' => Storage::url($path)
+                ]);
+                
+            } catch (\Exception $e) {
+                \Log::error('❌ Image upload failed:', ['error' => $e->getMessage()]);
+            }
         }
 
         $product = Product::create([
@@ -107,23 +129,24 @@ class ProductController extends Controller
             'category'              => $request->category,
             'condition'             => $request->condition,
             'price'                 => $request->price,
-            'image_url'             => $imagePath ? Storage::url($imagePath) : '/images/default-product.jpg',
+            'image_url'             => $imageUrl,
             'verification_status'   => 'pending',
-
-            // Barter fields
             'allow_barter'          => (bool) $request->allow_barter,
             'barter_preferences'    => $request->barter_preferences,
-
-            // Trade-in fields
             'allow_trade_in'        => (bool) $request->allow_trade_in,
             'trade_in_value'        => $request->trade_in_value ?: null,
             'trade_in_preferences'  => $request->trade_in_preferences,
         ]);
 
+        \Log::info('✅ Product created with image:', [
+            'product_id' => $product->id,
+            'image_url' => $product->image_url
+        ]);
+
         return response()->json([
             'success' => true,
             'data'    => $product->load('user'),
-            'message' => 'Produk berhasil diupload! Menunggu verifikasi admin.'
+            'message' => 'Produk berhasil diupload!'
         ], 201);
     }
 
@@ -140,11 +163,12 @@ class ProductController extends Controller
     }
 
 
-    // ========================================
-    // DELETE
-    // ========================================
+// ========================================
+// DELETE - Dengan validasi transaksi
+// ========================================
     public function destroy(Request $request, Product $product)
     {
+        // Cek authorization
         if ($product->user_id !== $request->user()->id && !$request->user()->isAdmin()) {
             return response()->json([
                 'success' => false,
@@ -152,11 +176,43 @@ class ProductController extends Controller
             ], 403);
         }
 
+        // 🔥 CEK APAKAH PRODUK SUDAH PERNAH ADA TRANSAKSI
+        $hasTransactions = $product->transactions()->exists();
+        $hasBarters = $product->bartersAsRequester()->exists() || $product->bartersAsReceiver()->exists();
+        $hasTradeIns = $product->tradeInsAsOld()->exists() || $product->tradeInsAsNew()->exists();
+
+        if ($hasTransactions || $hasBarters || $hasTradeIns) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Produk tidak dapat dihapus karena sudah memiliki riwayat transaksi, barter, atau tukar tambah'
+            ], 422);
+        }
+
+        // Jika aman, hapus produk
         $product->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Product deleted successfully'
+        ]);
+    }
+
+    // Di ProductController - Method untuk admin
+    public function adminDelete(Request $request, Product $product)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Admin bisa archive produk meski ada transaksi
+        $product->update([
+            'status' => 'archived',
+            'verification_status' => 'rejected'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Produk berhasil diarchive'
         ]);
     }
 

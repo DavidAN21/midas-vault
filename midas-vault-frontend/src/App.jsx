@@ -7,13 +7,13 @@ import Marketplace from './pages/Marketplace';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Barter from './pages/Barter';
-import TradeIn from './pages/TradeIn';
 import Contact from './pages/Contact';
 import AddProduct from './pages/AddProduct';
 import EditProduct from './pages/EditProduct';
 import ProductDetail from './pages/ProductDetail';
 import AdminDashboard from './pages/AdminDashboard';
+import VerificationPage from './pages/VerificationPage';
+
 
 
 function App() {
@@ -29,12 +29,12 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/barter" element={<Barter />} />
-            <Route path="/trade-in" element={<TradeIn />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/add-product" element={<AddProduct />} />
             <Route path="/edit-product/:id" element={<EditProduct />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/verifications" element={<VerificationPage />} />
+
           </Routes>
         </main>
         <Footer />

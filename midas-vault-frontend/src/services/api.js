@@ -59,7 +59,11 @@ export const productAPI = {
     api.post('/products', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  update: (id, data) => api.put(`/products/${id}`, data),
+  // 🔥 PERBAIKAN: Tambah headers multipart untuk update juga
+  update: (id, data) => 
+    api.post(`/products/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   delete: (id) => api.delete(`/products/${id}`),
 };
 

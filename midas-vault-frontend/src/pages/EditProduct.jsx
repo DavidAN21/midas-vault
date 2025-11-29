@@ -82,6 +82,8 @@ const EditProduct = () => {
 
     try {
       const submitData = new FormData();
+      
+      // 🔥 PASTIKAN SEMUA FIELD REQUIRED DIKIRIM
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
       submitData.append('category', formData.category);
@@ -95,6 +97,7 @@ const EditProduct = () => {
       submitData.append('trade_in_value', formData.trade_in_value || '');
       submitData.append('trade_in_preferences', formData.trade_in_preferences || '');
       
+      // 🔥 GUNAKAN POST DENGAN _method PUT untuk FormData
       submitData.append('_method', 'PUT');
       
       if (formData.image) {
@@ -106,8 +109,9 @@ const EditProduct = () => {
         console.log(key, value);
       }
 
+      // 🔥 GUNAKAN productAPI.update YANG SUDAH DIPERBAIKI
       const response = await productAPI.update(id, submitData);
-      console.log('Update response:', response); // Debug
+      console.log('Update response:', response);
       
       if (response.data.success) {
         alert('Produk berhasil diupdate!');
@@ -116,8 +120,15 @@ const EditProduct = () => {
         throw new Error(response.data.message || 'Gagal update produk');
       }
     } catch (error) {
-      console.error('Update error:', error); // Debug
-      setError(error.response?.data?.message || 'Gagal update produk');
+      console.error('Update error:', error);
+      
+      // 🔥 TAMPILKAN ERROR DETAIL DARI BACKEND
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        setError(errorMessages.join(', '));
+      } else {
+        setError(error.response?.data?.message || 'Gagal update produk');
+      }
     } finally {
       setLoading(false);
     }
@@ -126,11 +137,23 @@ const EditProduct = () => {
   const handleDelete = async () => {
     if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
       try {
-        await productAPI.delete(id);
-        alert('Produk berhasil dihapus!');
-        navigate('/dashboard');
+        const response = await productAPI.delete(id);
+        
+        if (response.data.success) {
+          alert('Produk berhasil dihapus!');
+          navigate('/dashboard');
+        } else {
+          throw new Error(response.data.message || 'Gagal menghapus produk');
+        }
       } catch (error) {
-        alert('Gagal menghapus produk');
+        console.error('Delete error:', error);
+        
+        // 🔥 HANDLE ERROR KHUSUS UNTUK PRODUK DENGAN TRANSAKSI
+        if (error.response?.status === 422) {
+          alert(error.response.data.message || 'Produk tidak dapat dihapus karena memiliki riwayat transaksi');
+        } else {
+          alert('Gagal menghapus produk: ' + (error.response?.data?.message || error.message));
+        }
       }
     }
   };
@@ -327,13 +350,6 @@ const EditProduct = () => {
             </div>
 
             <div className="flex space-x-4">
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors"
-              >
-                Hapus Produk
-              </button>
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}

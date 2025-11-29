@@ -62,5 +62,26 @@ Route::prefix('v1')->group(function () {
             Route::patch('/verifications/{product}', [VerificationController::class, 'update']);
             Route::get('/verifications/verified', [VerificationController::class, 'verifiedProducts']);
         });
+        Route::get('/debug-storage', function() {
+            // Test write file
+            $testContent = 'Test file content ' . time();
+            Storage::disk('public')->put('test.txt', $testContent);
+            
+            // Test list files
+            $files = Storage::disk('public')->files('products');
+            
+            return response()->json([
+                'app_url' => config('app.url'),
+                'storage_url' => config('app.url') . '/storage',
+                'storage_path' => storage_path('app/public'),
+                'public_storage_path' => public_path('storage'),
+                'test_file_exists' => Storage::disk('public')->exists('test.txt'),
+                'test_file_content' => Storage::disk('public')->get('test.txt'),
+                'product_files' => $files,
+                'product_files_urls' => array_map(function($file) {
+                    return Storage::url($file);
+                }, $files)
+            ]);
+        });
     });
 });

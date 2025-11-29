@@ -36,6 +36,7 @@ class User extends Authenticatable
         ];
     }
 
+    // Relationships tetap sama
     public function products()
     {
         return $this->hasMany(Product::class);
@@ -81,13 +82,25 @@ class User extends Authenticatable
         return $this->hasMany(Verification::class, 'verifier_id');
     }
 
+    // Simplify role checks
     public function isAdmin()
     {
         return $this->role === 'admin';
     }
 
-    public function isSeller()
+    public function isUser()
     {
-        return $this->role === 'seller';
+        return $this->role === 'user';
+    }
+
+    // User bisa menjadi buyer dan seller
+    public function canSell()
+    {
+        return $this->isUser(); // Semua user bisa jual
+    }
+
+    public function canBuy()
+    {
+        return $this->isUser(); // Semua user bisa beli
     }
 }

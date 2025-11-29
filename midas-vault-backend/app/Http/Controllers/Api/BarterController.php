@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Barter;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BarterController extends Controller
 {
     // ===============================
-    // STORE (Tidak diubah)
+    // STORE (DIPERBAIKI)
     // ===============================
 
     public function store(Request $request)
@@ -25,7 +26,7 @@ class BarterController extends Controller
         $requesterProduct = Product::with('user')->findOrFail($request->requester_product_id);
 
         // Debug info
-        \Log::info('Barter Attempt:', [
+        Log::info('Barter Attempt:', [
             'requester_user_id' => $request->user()->id,
             'requester_product_user_id' => $requesterProduct->user_id,
             'receiver_product_user_id' => $receiverProduct->user_id,
@@ -38,7 +39,7 @@ class BarterController extends Controller
 
         // Validasi 1: Cek apakah produk requester milik user
         if ($requesterProduct->user_id !== $request->user()->id) {
-            \Log::warning('Barter Failed: Requester product not owned by user');
+            Log::warning('Barter Failed: Requester product not owned by user');
             return response()->json([
                 'success' => false,
                 'message' => 'Anda hanya bisa menawarkan produk sendiri untuk barter'
@@ -47,7 +48,7 @@ class BarterController extends Controller
 
         // Validasi 2: Cek tidak barter dengan diri sendiri
         if ($receiverProduct->user_id === $request->user()->id) {
-            \Log::warning('Barter Failed: Cannot barter with own product');
+            Log::warning('Barter Failed: Cannot barter with own product');
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak bisa barter dengan produk sendiri'
@@ -55,8 +56,8 @@ class BarterController extends Controller
         }
 
         // Validasi 3: Cek apakah receiver product menerima barter
-        if (!$receiverProduct->allow_barter) {
-            \Log::warning('Barter Failed: Receiver product does not allow barter');
+        if (!$receiverProduct->allowsBarter()) {
+            Log::warning('Barter Failed: Receiver product does not allow barter');
             return response()->json([
                 'success' => false,
                 'message' => 'Produk ini tidak menerima penawaran barter'
@@ -65,7 +66,7 @@ class BarterController extends Controller
 
         // Validasi 4: Cek status verification kedua produk
         if (!$requesterProduct->isVerified()) {
-            \Log::warning('Barter Failed: Requester product not verified');
+            Log::warning('Barter Failed: Requester product not verified');
             return response()->json([
                 'success' => false,
                 'message' => 'Produk Anda belum terverifikasi'
@@ -73,7 +74,7 @@ class BarterController extends Controller
         }
 
         if (!$receiverProduct->isVerified()) {
-            \Log::warning('Barter Failed: Receiver product not verified');
+            Log::warning('Barter Failed: Receiver product not verified');
             return response()->json([
                 'success' => false,
                 'message' => 'Produk target belum terverifikasi'
@@ -82,7 +83,7 @@ class BarterController extends Controller
 
         // Validasi 5: Cek ketersediaan produk
         if (!$requesterProduct->isAvailable()) {
-            \Log::warning('Barter Failed: Requester product not available');
+            Log::warning('Barter Failed: Requester product not available');
             return response()->json([
                 'success' => false,
                 'message' => 'Produk Anda sudah tidak tersedia'
@@ -90,27 +91,35 @@ class BarterController extends Controller
         }
 
         if (!$receiverProduct->isAvailable()) {
-            \Log::warning('Barter Failed: Receiver product not available');
+            Log::warning('Barter Failed: Receiver product not available');
             return response()->json([
                 'success' => false,
                 'message' => 'Produk target sudah tidak tersedia'
             ], 400);
         }
 
-        // Validasi 6: Cek apakah sudah ada barter pending
-        $existingBarter = Barter::where(function($query) use ($requesterProduct, $receiverProduct) {
-            $query->where('requester_product_id', $requesterProduct->id)
-                ->where('receiver_product_id', $receiverProduct->id);
-        })->orWhere(function($query) use ($requesterProduct, $receiverProduct) {
-            $query->where('requester_product_id', $receiverProduct->id)
-                ->where('receiver_product_id', $requesterProduct->id);
-        })->whereIn('status', ['pending', 'accepted'])->first();
+        // ========================================
+        // 🔥 VALIDASI 6: CEK EXISTING BARTER AKTIF (DIPERBAIKI)
+        // ========================================
+        $existingActiveBarter = Barter::active()
+            ->where(function($query) use ($requesterProduct, $receiverProduct) {
+                $query->where('requester_product_id', $requesterProduct->id)
+                    ->where('receiver_product_id', $receiverProduct->id);
+            })->orWhere(function($query) use ($requesterProduct, $receiverProduct) {
+                $query->where('requester_product_id', $receiverProduct->id)
+                    ->where('receiver_product_id', $requesterProduct->id);
+            })
+            ->first();
 
-        if ($existingBarter) {
-            \Log::warning('Barter Failed: Existing barter found');
+        if ($existingActiveBarter) {
+            Log::warning('Barter Failed: Active barter exists', [
+                'barter_id' => $existingActiveBarter->id,
+                'status' => $existingActiveBarter->status
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Sudah ada penawaran barter antara produk ini'
+                'message' => 'Sudah ada penawaran barter aktif antara produk ini'
             ], 400);
         }
 
@@ -120,11 +129,13 @@ class BarterController extends Controller
             'receiver_id' => $receiverProduct->user_id,
             'requester_product_id' => $requesterProduct->id,
             'receiver_product_id' => $receiverProduct->id,
-            'notes' => $request->notes,
+            'notes' => $request->notes, // 🔥 HANYA PAKAI NOTES, TIDAK ADA MESSAGE
             'status' => 'pending',
+            'requester_confirmed' => false,
+            'receiver_confirmed' => false,
         ]);
 
-        \Log::info('Barter Created Successfully:', ['barter_id' => $barter->id]);
+        Log::info('Barter Created Successfully:', ['barter_id' => $barter->id]);
 
         return response()->json([
             'success' => true,
@@ -134,8 +145,12 @@ class BarterController extends Controller
     }
 
     // ===============================
-    // ACCEPT (Tidak diubah)
+    // ACCEPT (DIPERBAIKI)
     // ===============================
+
+// ===============================
+// ACCEPT (FIXED - Use valid status)
+// ===============================
 
     public function accept(Request $request, Barter $barter)
     {
@@ -143,25 +158,34 @@ class BarterController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        if ($barter->status !== 'pending') {
-            return response()->json(['success' => false, 'message' => 'Penawaran barter sudah diproses'], 400);
+        if (!$barter->canBeAccepted()) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Penawaran barter tidak dapat diterima'
+            ], 400);
         }
 
-        $barter->update(['status' => 'accepted']);
+        try {
+            $barter->markAsAccepted();
+            
+            Log::info('Barter Accepted:', ['barter_id' => $barter->id]);
 
-        // Update status produk agar tidak bisa dibeli pengguna lain
-        $barter->requesterProduct->update(['status' => 'bartered']);
-        $barter->receiverProduct->update(['status' => 'bartered']);
-
-        return response()->json([
-            'success' => true,
-            'data' => $barter,
-            'message' => 'Penawaran barter diterima!'
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $barter->load(['requester', 'receiver', 'requesterProduct', 'receiverProduct']),
+                'message' => 'Penawaran barter diterima! Silahkan konfirmasi setelah pertukaran.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Barter Accept Error:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // ===============================
-    // REJECT (Tidak diubah)
+    // REJECT (DIPERBAIKI)
     // ===============================
 
     public function reject(Request $request, Barter $barter)
@@ -173,17 +197,34 @@ class BarterController extends Controller
             ], 403);
         }
 
-        $barter->update(['status' => 'rejected']);
+        if (!$barter->isPending()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Penawaran barter sudah diproses'
+            ], 400);
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $barter,
-            'message' => 'Penawaran barter ditolak!'
-        ]);
+        try {
+            $barter->markAsRejected();
+            
+            Log::info('Barter Rejected:', ['barter_id' => $barter->id]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $barter->load(['requester', 'receiver', 'requesterProduct', 'receiverProduct']),
+                'message' => 'Penawaran barter ditolak!'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Barter Reject Error:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // ===============================
-    // COMPLETE (MODIFIKASI LENGKAP)
+    // COMPLETE (DIPERBAIKI DENGAN DEBUG)
     // ===============================
 
     public function complete(Request $request, Barter $barter)
@@ -195,11 +236,29 @@ class BarterController extends Controller
             ], 403);
         }
 
-        // Cek apakah barter sudah accepted
-        if (!$barter->isAccepted()) {
+        // 🔥 DEBUG: Log status barter sebelum validasi
+        Log::info('Barter Complete Attempt:', [
+            'barter_id' => $barter->id,
+            'user_id' => $request->user()->id,
+            'barter_status' => $barter->status,
+            'requester_confirmed' => $barter->requester_confirmed,
+            'receiver_confirmed' => $barter->receiver_confirmed,
+            'isAccepted' => $barter->isAccepted(),
+            'canBeCompleted' => $barter->canBeCompleted(),
+            'isConfirmedByUser' => $barter->isConfirmedByUser($request->user()->id)
+        ]);
+
+        // Cek apakah barter bisa dikonfirmasi
+        if (!$barter->canBeCompleted()) {
+            Log::warning('Barter cannot be completed:', [
+                'barter_id' => $barter->id,
+                'status' => $barter->status,
+                'requester_confirmed' => $barter->requester_confirmed,
+                'receiver_confirmed' => $barter->receiver_confirmed
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Barter belum diterima'
+                'message' => 'Barter belum bisa dikonfirmasi'
             ], 400);
         }
 
@@ -217,18 +276,29 @@ class BarterController extends Controller
             
             $message = 'Konfirmasi berhasil! ';
 
+            // 🔥 DEBUG: Log setelah konfirmasi
+            Log::info('After confirmByUser:', [
+                'barter_id' => $barter->id,
+                'requester_confirmed' => $barter->requester_confirmed,
+                'receiver_confirmed' => $barter->receiver_confirmed,
+                'isConfirmedByBoth' => $barter->isConfirmedByBoth(),
+                'status' => $barter->status
+            ]);
+
             // Cek apakah kedua belah pihak sudah konfirmasi
             if ($barter->isCompleted()) {
-                $barter->update(['status' => 'completed']);
-                
-                // Update status produk
-                $barter->requesterProduct->update(['status' => 'bartered']);
-                $barter->receiverProduct->update(['status' => 'bartered']);
-
+                $barter->markAsCompleted();
                 $message .= 'Barter selesai! Kedua pihak telah mengkonfirmasi.';
             } else {
                 $message .= 'Menunggu konfirmasi dari pihak lain.';
             }
+
+            Log::info('Barter Completion Updated:', [
+                'barter_id' => $barter->id,
+                'status' => $barter->status,
+                'requester_confirmed' => $barter->requester_confirmed,
+                'receiver_confirmed' => $barter->receiver_confirmed
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -237,6 +307,7 @@ class BarterController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Barter Complete Error:', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -245,7 +316,7 @@ class BarterController extends Controller
     }
 
     // ===============================
-    // CANCEL (MODIFIKASI LENGKAP)
+    // CANCEL (DIPERBAIKI)
     // ===============================
 
     public function cancel(Request $request, Barter $barter)
@@ -257,26 +328,34 @@ class BarterController extends Controller
             ], 403);
         }
 
-        $barter->update([
-            'status' => 'cancelled',
-            'requester_confirmed' => false,
-            'receiver_confirmed' => false,
-        ]);
-
-        // Kembalikan status produk ke available
-        if ($barter->status === 'accepted') {
-            $barter->requesterProduct->makeAvailable();
-            $barter->receiverProduct->makeAvailable();
+        if (!$barter->canBeCancelled()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barter tidak dapat dibatalkan'
+            ], 400);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $barter,
-            'message' => 'Barter dibatalkan! Produk kembali tersedia di marketplace.'
-        ]);
+        try {
+            $barter->markAsCancelled();
+            
+            Log::info('Barter Cancelled:', ['barter_id' => $barter->id]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $barter->load(['requester', 'receiver', 'requesterProduct', 'receiverProduct']),
+                'message' => 'Barter dibatalkan! Produk kembali tersedia di marketplace.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Barter Cancel Error:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
+
     // ===============================
-    // MY BARTERS (Tidak diubah)
+    // MY BARTERS (TIDAK DIUBAH)
     // ===============================
 
     public function myBarters(Request $request)
@@ -290,6 +369,25 @@ class BarterController extends Controller
         return response()->json([
             'success' => true,
             'data' => $barters
+        ]);
+    }
+
+    // ===============================
+    // SHOW (TAMBAHAN - JIKA DIPERLUKAN)
+    // ===============================
+
+    public function show(Request $request, Barter $barter)
+    {
+        if (!in_array($request->user()->id, [$barter->requester_id, $barter->receiver_id])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $barter->load(['requester', 'receiver', 'requesterProduct', 'receiverProduct'])
         ]);
     }
 }

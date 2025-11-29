@@ -4,28 +4,36 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // 🔥 TAMBAH INI
 
 class Transaction extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // 🔥 TAMBAH SoftDeletes
 
-    protected $fillable = [
+        protected $fillable = [
         'buyer_id',
         'seller_id', 
         'product_id',
         'amount',
-        'status',
-        'payment_reference',
+        'total_amount', // jika ada
         'payment_method',
+        'payment_reference', 
+        'status',
+        'escrow_status'
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-        ];
-    }
+    protected $attributes = [
+        'amount' => 0, // 🔥 DEFAULT VALUE
+        'status' => 'pending',
+    ];
 
+    protected $casts = [
+        'total_amount' => 'decimal:2',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+    ];
+
+    // Relations
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id');
@@ -43,6 +51,22 @@ class Transaction extends Model
 
     public function review()
     {
-        return $this->hasOne(Review::class);
+        return $this->hasOne(Review::class, 'transaction_id');
+    }
+
+    // 🔥 TAMBAH METHOD UNTUK CEK STATUS
+    public function isCompleted()
+    {
+        return $this->status === 'completed';
+    }
+
+    public function isCancelled()
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function isActive()
+    {
+        return in_array($this->status, ['pending', 'confirmed']);
     }
 }

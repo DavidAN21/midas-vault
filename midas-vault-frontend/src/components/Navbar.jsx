@@ -19,13 +19,15 @@ const Navbar = () => {
     <nav className="bg-midas-dark text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to={isAdmin ? "/admin" : "/"} className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-midas-gold rounded-full flex items-center justify-center">
-                <span className="text-midas-dark font-bold text-sm">M</span>
-              </div>
-              <span className="font-bold text-xl">Midas Vault {isAdmin && "(Admin)"}</span>
-            </Link>
+          <div className="flex items-center ">
+           <Link to={isAdmin ? "/admin" : "/"} className="flex items-center space-x-2 ">
+            <img 
+              src="/images/midaslogo.jpg" 
+              alt="Midas Vault" 
+              className="w-8 h-8 object-contain rounded-full"
+            />
+            <span className="font-bold text-xl">Midas Vault {isAdmin && "(Admin)"}</span>
+          </Link>
           </div>
 
           {/* Desktop Menu */}

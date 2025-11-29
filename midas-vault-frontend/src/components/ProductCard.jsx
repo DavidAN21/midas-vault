@@ -71,6 +71,10 @@ const ProductCard = ({ product }) => {
           src={product.image_url || '/images/default-product.jpg'}
           alt={product.name}
           className="w-full h-48 object-cover"
+          onError={(e) => {
+            console.error('Image failed to load:', product.image_url);
+            e.target.src = '/images/default-product.jpg';
+          }}
         />
 
         {/* Verified Badge */}

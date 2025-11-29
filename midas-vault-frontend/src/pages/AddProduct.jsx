@@ -22,15 +22,22 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+    // Redirect jika belum login atau admin
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user.id) {
+      alert('Silakan login terlebih dahulu untuk menjual produk!');
+      navigate('/login');
+      return;
+    }
+    
     if (user.role === 'admin') {
-      alert('Admin tidak bisa upload produk');
+      alert('Admin tidak bisa menjual produk!');
       navigate('/admin');
       return;
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   const categories = ['Fashion', 'Electronics', 'Books', 'Hobbies', 'Home', 'Other'];
 
