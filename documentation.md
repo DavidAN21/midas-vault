@@ -40,53 +40,86 @@ Platform e-commerce dengan fitur **Marketplace**, **Barter**, dan **Tukar Tambah
 ## 📁 Project Structure
 
 ### Backend (Laravel)
-app/
-├── Http/Controllers/Api/
-│ ├── AdminController.php
-│ ├── AuthController.php
-│ ├── ProductController.php
-│ ├── TransactionController.php
-│ ├── BarterController.php
-│ ├── TradeInController.php
-│ └── VerificationController.php
-├── Models/
-│ ├── User.php
-│ ├── Product.php
-│ ├── Transaction.php
-│ ├── Barter.php
-│ └── TradeIn.php
-└── Http/Requests/
-├── ProductRequest.php
-└── UpdateProductRequest.php
+midas-vault-backend/
+├── 📄 .env                          # Environment variables (contoh)
+├── 📄 artisan                       # Laravel CLI
+├── 📄 composer.json                 # PHP dependencies
+├── 📁 app/
+│   ├── 📁 Http/
+│   │   ├── 📁 Controllers/
+│   │   │   ├── 📄 Controller.php               # Base Controller (default Laravel)
+│   │   │   └── 📁 Api/
+│   │   │       ├── 📄 AdminController.php
+│   │   │       ├── 📄 AuthController.php
+│   │   │       ├── 📄 ProductController.php
+│   │   │       ├── 📄 TransactionController.php
+│   │   │       ├── 📄 BarterController.php
+│   │   │       ├── 📄 TradeInController.php
+│   │   │       └── 📄 VerificationController.php
+│   │   └── 📁 Requests/
+│   │       ├── 📄 ProductRequest.php
+│   │       └── 📄 UpdateProductRequest.php
+│   └── 📁 Models/
+│       ├── 📄 User.php
+│       ├── 📄 Product.php
+│       ├── 📄 Transaction.php
+│       ├── 📄 Barter.php
+│       └── 📄 TradeIn.php
+├── 📁 bootstrap/
+│   ├── 📄 app.php                  # Application bootstrap
+│   └── 📁 cache/                   # Cache directory
+├── 📁 database/
+│   ├── 📁 migrations/
+│   │   ├── 📄 create_users_table.php
+│   │   ├── 📄 create_products_table.php
+│   │   ├── 📄 create_transactions_table.php
+│   │   ├── 📄 create_barters_table.php
+│   │   └── 📄 create_trade_ins_table.php
+│   └── 📁 seeders/
+│       └── 📄 DatabaseSeeder.php
+├── 📁 public/
+│   ├── 📄 index.php                # Entry point
+│   └── 📄 .htaccess
+├── 📁 routes/
+│   ├── 📄 api.php                  # API routes
+│   ├── 📄 web.php                  # Web routes
+│   └── 📄 console.php              # Console routes
+├── 📁 storage/                     # Storage folder
+└── 📁 vendor/                      # Composer dependencies
 
-database/migrations/
-├── create_users_table.php
-├── create_products_table.php
-├── create_transactions_table.php
-├── create_barters_table.php
-└── create_trade_ins_table.php
 
 
 ### Frontend (React)
-src/
-├── components/
-│ ├── Navbar.jsx
-│ ├── Footer.jsx
-│ ├── ProductCard.jsx
-│ └── Loader.jsx
-├── pages/
-│ ├── Home.jsx
-│ ├── Marketplace.jsx
-│ ├── Login.jsx
-│ ├── Register.jsx
-│ ├── Dashboard.jsx
-│ ├── ProductDetail.jsx
-│ ├── EditProduct.jsx
-│ ├── Contact.jsx
-│ ├── AdminDashboard.jsx
-│ └── VerificationPage.jsx
-└── services/
-└── api.js
+midas-vault-frontend/
+├── 📄 index.html                    # Entry point
+├── 📄 package.json                  # Node.js dependencies
+├── 📄 vite.config.js                # Vite configuration
+├── 📄 tailwind.config.js            # Tailwind CSS config
+├── 📄 .env                          # Environment variables
+└── 📁 src/
+    ├── 📄 main.jsx                  # React entry point
+    ├── 📄 App.jsx                   # Main App component
+    ├── 📄 index.css                 # Global styles
+    ├── 📁 components/               # Reusable UI components
+    │   ├── 📄 Navbar.jsx
+    │   ├── 📄 Footer.jsx
+    │   ├── 📄 ProductCard.jsx
+    │   └── 📄 Loader.jsx
+    ├── 📁 pages/                    # Page components
+    │   ├── 📄 Home.jsx
+    │   ├── 📄 Marketplace.jsx
+    │   ├── 📄 Login.jsx
+    │   ├── 📄 Register.jsx
+    │   ├── 📄 Dashboard.jsx
+    │   ├── 📄 ProductDetail.jsx
+    │   ├── 📄 EditProduct.jsx
+    │   ├── 📄 AdminDashboard.jsx
+    │   ├── 📄 VerificationPage.jsx
+    │   ├── 📄 Barter.jsx
+    │   └── 📄 TradeIn.jsx
+    └── 📁 services/                 # API utilities
+        └── 📄 api.js
+
 
 
 ## 🌐 API Endpoints
