@@ -40,6 +40,7 @@ Platform e-commerce dengan fitur **Marketplace**, **Barter**, dan **Tukar Tambah
 ## 📁 Project Structure
 
 ### Backend (Laravel)
+```
 midas-vault-backend/
 ├── 📄 .env                          # Environment variables (contoh)
 ├── 📄 artisan                       # Laravel CLI
@@ -86,10 +87,11 @@ midas-vault-backend/
 │   └── 📄 console.php              # Console routes
 ├── 📁 storage/                     # Storage folder
 └── 📁 vendor/                      # Composer dependencies
-
+```
 
 
 ### Frontend (React)
+```
 midas-vault-frontend/
 ├── 📄 index.html                    # Entry point
 ├── 📄 package.json                  # Node.js dependencies
@@ -119,7 +121,7 @@ midas-vault-frontend/
     │   └── 📄 TradeIn.jsx
     └── 📁 services/                 # API utilities
         └── 📄 api.js
-
+```
 
 
 ## 🌐 API Endpoints
