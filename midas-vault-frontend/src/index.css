@@ -11,6 +11,16 @@ body {
   background: linear-gradient(135deg, #E6C200 0%, #FFD700 100%);
 }
 
+/* Di file CSS global */
 .shadow-gold {
-  box-shadow: 0 4px 14px 0 rgba(230, 194, 0, 0.3);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Untuk memberikan padding pada body agar konten tidak tertutup navbar */
+body {
+  padding-top: 80px;
 }

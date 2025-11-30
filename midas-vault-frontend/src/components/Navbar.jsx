@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -12,68 +15,115 @@ const Navbar = () => {
     navigate('/');
   };
 
-  // Jika admin, sembunyikan menu marketplace dan jual beli
+  // Effect untuk handle scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const isAdmin = user.role === 'admin';
 
+  // Function untuk mengecek apakah link aktif
+  const isActiveRoute = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
-    <nav className="bg-midas-dark text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center ">
-           <Link to={isAdmin ? "/admin" : "/"} className="flex items-center space-x-2 ">
-            <img 
-              src="/images/midaslogo.jpg" 
-              alt="Midas Vault" 
-              className="w-8 h-8 object-contain rounded-full"
-            />
-            <span className="font-bold text-xl">Midas Vault {isAdmin && "(Admin)"}</span>
-          </Link>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      isScrolled 
+        ? 'bg-gradient-to-r from-midas-dark/95 via-gray-900/95 to-midas-dark/95 backdrop-blur-lg border-b-2 border-midas-gold/30 shadow-2xl' 
+        : 'bg-gradient-to-r from-midas-dark via-gray-900 to-midas-dark border-b-2 border-midas-gold/20 shadow-lg'
+    }`}>
+      {/* Animated background effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-midas-gold/5 to-transparent animate-pulse-slow"></div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="flex justify-between h-20">
+          {/* Logo Section */}
+          <div className="flex items-center">
+            <Link 
+              to={isAdmin ? "/admin" : "/"} 
+              className="flex items-center space-x-3 group"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              <div className={`relative transition-all duration-500 ${isHovered ? 'rotate-12 scale-110' : ''}`}>
+                <div className="absolute inset-0 bg-midas-gold rounded-full blur-md opacity-50 animate-pulse"></div>
+                <img 
+                  src="/images/midaslogo.jpg" 
+                  alt="Midas Vault" 
+                  className="w-10 h-10 object-contain rounded-full relative z-10 border-2 border-midas-gold/50 shadow-lg"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-2xl bg-gradient-to-r from-white to-midas-gold bg-clip-text text-transparent">
+                  Midas Vault
+                </span>
+                {isAdmin && (
+                  <span className="text-xs text-midas-gold font-semibold bg-midas-dark/50 px-2 py-1 rounded-full border border-midas-gold/30">
+                    ADMIN MODE
+                  </span>
+                )}
+              </div>
+            </Link>
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-1">
             {!isAdmin ? (
               // Menu untuk user biasa
               <>
-                <Link to="/" className="hover:text-midas-gold transition-colors">Home</Link>
-                <Link to="/marketplace" className="hover:text-midas-gold transition-colors">Marketplace</Link>
+                <NavLink to="/" text="Home" isActive={isActiveRoute('/')} />
+                <NavLink to="/marketplace" text="Marketplace" isActive={isActiveRoute('/marketplace')} />
                 {user.id && user.role === 'seller' && (
-                  <Link to="/add-product" className="hover:text-midas-gold transition-colors">Upload Produk</Link>
+                  <NavLink to="/add-product" text="Upload Produk" isActive={isActiveRoute('/add-product')} />
                 )}
               </>
             ) : (
               // Menu khusus admin
               <>
-                <Link to="/admin" className="hover:text-midas-gold transition-colors">Dashboard Admin</Link>
-                <Link to="/verifications" className="hover:text-midas-gold transition-colors">Verifikasi Produk</Link>
+                <NavLink to="/admin" text="Dashboard Admin" isActive={isActiveRoute('/admin')} />
+                <NavLink to="/verifications" text="Verifikasi Produk" isActive={isActiveRoute('/verifications')} />
               </>
             )}
             
             {user.id ? (
-              <>
+              <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-midas-gold/30">
                 {!isAdmin && (
-                  <Link to="/dashboard" className="hover:text-midas-gold transition-colors">Dashboard</Link>
+                  <NavLink to="/dashboard" text="Dashboard" isActive={isActiveRoute('/dashboard')} />
                 )}
                 <div className="flex items-center space-x-4">
-                  <span className="text-midas-gold">
-                    {isAdmin ? '👑 Admin' : `Hi, ${user.name}`}
-                  </span>
+                  <div className="px-4 py-2 bg-midas-dark/50 rounded-2xl border border-midas-gold/20 backdrop-blur-sm">
+                    <span className="text-midas-gold font-semibold text-sm">
+                      {isAdmin ? 'Administrator' : user.name}
+                    </span>
+                  </div>
                   <button
                     onClick={handleLogout}
-                    className="bg-midas-gold text-midas-dark px-4 py-2 rounded-2xl font-semibold hover:bg-yellow-500 transition-colors"
+                    className="group relative overflow-hidden bg-gradient-to-r from-midas-gold to-yellow-500 text-midas-dark px-6 py-2.5 rounded-2xl font-bold hover:shadow-2xl transition-all duration-300 hover:scale-105"
                   >
-                    Logout
+                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                    <span className="relative">Logout</span>
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link to="/login" className="hover:text-midas-gold transition-colors">Login</Link>
+                <NavLink to="/login" text="Login" isActive={isActiveRoute('/login')} />
                 <Link
                   to="/register"
-                  className="bg-midas-gold text-midas-dark px-4 py-2 rounded-2xl font-semibold hover:bg-yellow-500 transition-colors"
+                  className="group relative overflow-hidden bg-gradient-to-r from-midas-gold to-yellow-500 text-midas-dark px-6 py-2.5 rounded-2xl font-bold hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 >
-                  Daftar
+                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <span className="relative">Daftar</span>
                 </Link>
               </div>
             )}
@@ -83,58 +133,97 @@ const Navbar = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-white hover:text-midas-gold focus:outline-none"
+              className="relative w-10 h-10 flex items-center justify-center bg-midas-dark/50 rounded-lg border border-midas-gold/30 hover:border-midas-gold transition-all duration-300"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <div className={`w-6 h-0.5 bg-midas-gold transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-0' : '-translate-y-1'}`}></div>
+              <div className={`absolute w-6 h-0.5 bg-midas-gold transition-all duration-300 ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}></div>
+              <div className={`w-6 h-0.5 bg-midas-gold transition-all duration-300 ${isMenuOpen ? '-rotate-45 translate-y-0' : 'translate-y-1'}`}></div>
             </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 space-y-4">
+          <div className="md:hidden py-6 space-y-4 bg-midas-dark/95 backdrop-blur-lg rounded-2xl border border-midas-gold/20 mt-2 shadow-2xl">
             {!isAdmin ? (
-              // Menu mobile untuk user biasa
               <>
-                <Link to="/" className="block hover:text-midas-gold transition-colors">Home</Link>
-                <Link to="/marketplace" className="block hover:text-midas-gold transition-colors">Marketplace</Link>
+                <MobileNavLink 
+                  to="/" 
+                  text="Home" 
+                  isActive={isActiveRoute('/')} 
+                  onClick={() => setIsMenuOpen(false)} 
+                />
+                <MobileNavLink 
+                  to="/marketplace" 
+                  text="Marketplace" 
+                  isActive={isActiveRoute('/marketplace')} 
+                  onClick={() => setIsMenuOpen(false)} 
+                />
                 {user.id && user.role === 'seller' && (
-                  <Link to="/add-product" className="block hover:text-midas-gold transition-colors">Upload Produk</Link>
+                  <MobileNavLink 
+                    to="/add-product" 
+                    text="Upload Produk" 
+                    isActive={isActiveRoute('/add-product')} 
+                    onClick={() => setIsMenuOpen(false)} 
+                  />
                 )}
               </>
             ) : (
-              // Menu mobile khusus admin
               <>
-                <Link to="/admin" className="block hover:text-midas-gold transition-colors">Dashboard Admin</Link>
-                <Link to="/verifications" className="block hover:text-midas-gold transition-colors">Verifikasi Produk</Link>
+                <MobileNavLink 
+                  to="/admin" 
+                  text="Dashboard Admin" 
+                  isActive={isActiveRoute('/admin')} 
+                  onClick={() => setIsMenuOpen(false)} 
+                />
+                <MobileNavLink 
+                  to="/verifications" 
+                  text="Verifikasi Produk" 
+                  isActive={isActiveRoute('/verifications')} 
+                  onClick={() => setIsMenuOpen(false)} 
+                />
               </>
             )}
             
             {user.id ? (
               <>
                 {!isAdmin && (
-                  <Link to="/dashboard" className="block hover:text-midas-gold transition-colors">Dashboard</Link>
+                  <MobileNavLink 
+                    to="/dashboard" 
+                    text="Dashboard" 
+                    isActive={isActiveRoute('/dashboard')} 
+                    onClick={() => setIsMenuOpen(false)} 
+                  />
                 )}
-                <div className="pt-4 border-t border-gray-600">
-                  <span className="block text-midas-gold mb-2">
-                    {isAdmin ? '👑 Admin' : `Hi, ${user.name}`}
-                  </span>
+                <div className="pt-4 border-t border-midas-gold/30 space-y-4">
+                  <div className="px-4 py-3 bg-midas-dark/50 rounded-xl border border-midas-gold/20">
+                    <span className="text-midas-gold font-semibold">
+                      {isAdmin ? 'Administrator' : `Hi, ${user.name}`}
+                    </span>
+                  </div>
                   <button
-                    onClick={handleLogout}
-                    className="bg-midas-gold text-midas-dark px-4 py-2 rounded-2xl font-semibold hover:bg-yellow-500 transition-colors w-full"
+                    onClick={() => {
+                      handleLogout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full bg-gradient-to-r from-midas-gold to-yellow-500 text-midas-dark py-3 rounded-2xl font-bold hover:shadow-2xl transition-all duration-300 hover:scale-105"
                   >
                     Logout
                   </button>
                 </div>
               </>
             ) : (
-              <div className="pt-4 border-t border-gray-600 space-y-2">
-                <Link to="/login" className="block hover:text-midas-gold transition-colors">Login</Link>
+              <div className="pt-4 border-t border-midas-gold/30 space-y-3">
+                <MobileNavLink 
+                  to="/login" 
+                  text="Login" 
+                  isActive={isActiveRoute('/login')} 
+                  onClick={() => setIsMenuOpen(false)} 
+                />
                 <Link
                   to="/register"
-                  className="block bg-midas-gold text-midas-dark px-4 py-2 rounded-2xl font-semibold hover:bg-yellow-500 transition-colors text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block bg-gradient-to-r from-midas-gold to-yellow-500 text-midas-dark py-3 rounded-2xl font-bold text-center hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   Daftar
                 </Link>
@@ -146,5 +235,49 @@ const Navbar = () => {
     </nav>
   );
 };
+
+// Reusable NavLink Component for Desktop dengan active state
+const NavLink = ({ to, text, isActive }) => (
+  <Link
+    to={to}
+    className={`relative px-6 py-2.5 font-semibold transition-all duration-300 group ${
+      isActive 
+        ? 'text-white bg-midas-gold/20 rounded-xl shadow-lg' 
+        : 'text-white/90 hover:text-white'
+    }`}
+  >
+    <span className="relative z-10">{text}</span>
+    
+    {isActive ? (
+      // Active state - lebih menonjol seperti hover permanen
+      <>
+        <div className="absolute inset-0 bg-gradient-to-r from-midas-gold/30 via-midas-gold/40 to-midas-gold/30 rounded-xl"></div>
+        <div className="absolute bottom-0 left-1/2 w-4/5 h-0.5 bg-midas-gold transform -translate-x-1/2"></div>
+        <div className="absolute inset-0 border border-midas-gold/50 rounded-xl shadow-gold"></div>
+      </>
+    ) : (
+      // Hover state untuk non-active
+      <>
+        <div className="absolute inset-0 bg-gradient-to-r from-midas-gold/0 via-midas-gold/10 to-midas-gold/0 rounded-xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></div>
+        <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-midas-gold transform -translate-x-1/2 group-hover:w-4/5 transition-all duration-300"></div>
+      </>
+    )}
+  </Link>
+);
+
+// Reusable Mobile NavLink Component dengan active state
+const MobileNavLink = ({ to, text, isActive, onClick }) => (
+  <Link
+    to={to}
+    onClick={onClick}
+    className={`block px-6 py-3 font-semibold transition-all duration-300 rounded-xl border-l-4 ${
+      isActive
+        ? 'text-white bg-midas-gold/20 border-midas-gold pl-8 shadow-inner'
+        : 'text-white/90 hover:text-white border-transparent hover:border-midas-gold hover:pl-8 hover:bg-midas-gold/10'
+    }`}
+  >
+    {text}
+  </Link>
+);
 
 export default Navbar;

@@ -1,4 +1,7 @@
 # 🏦 MIDAS VAULT - Platform Marketplace Modern
+Admin: admin@midasvault.com / password123
+Seller: budi@example.com / password123
+Buyer: rina@example.com / password123
 
 Platform e-commerce dengan fitur **Marketplace**, **Barter**, dan **Tukar Tambah** yang terintegrasi.
 
