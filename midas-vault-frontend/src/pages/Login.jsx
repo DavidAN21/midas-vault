@@ -31,7 +31,14 @@ const Login = () => {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
-      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      // Check for redirect location
+      const from = location.state?.from?.pathname || '/';
+      
+      if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed');
     } finally {

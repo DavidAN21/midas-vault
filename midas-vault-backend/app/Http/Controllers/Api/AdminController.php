@@ -22,15 +22,33 @@ class AdminController extends Controller
         }
 
         $overview = [
+            // User & Product Counts
             'total_users' => User::count(),
             'total_products' => Product::count(),
+
+            // Total Other Activities
             'total_transactions' => Transaction::count(),
             'total_barters' => Barter::count(),
             'total_trade_ins' => TradeIn::count(),
-            'pending_verifications' => Product::whereNull('verified_at')->count(),
-            'pending_transactions' => Transaction::where('status', 'pending')->count(),
-            'pending_barters' => Barter::where('status', 'pending')->count(),
-            'pending_trade_ins' => TradeIn::where('status', 'negotiation')->count(),
+
+            // Verification Stats
+            'pending_verifications' => Product::where('verification_status', 'pending')->count(),
+            'approved_verifications' => Product::where('verification_status', 'approved')->count(),
+            'rejected_verifications' => Product::where('verification_status', 'rejected')->count(),
+
+            // Product Status Stats
+            'available_products' => Product::where('status', 'available')->count(),
+            'sold_products' => Product::where('status', 'sold')->count(),
+            'bartered_products' => Product::where('status', 'bartered')->count(),
+            'traded_products' => Product::where('status', 'traded')->count(),
+
+            // Transaction Stats
+            'pending_transactions' => Transaction::where('status', 'pending')
+                ->orWhere('status', 'escrow')
+                ->count(),
+
+            'completed_transactions' => Transaction::where('status', 'completed')->count(),
+            'refunded_transactions' => Transaction::where('status', 'refunded')->count(),
         ];
 
         return response()->json([

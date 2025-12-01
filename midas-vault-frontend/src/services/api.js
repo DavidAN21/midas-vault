@@ -39,6 +39,21 @@ api.interceptors.response.use(
       data: error.response?.data,
       message: error.message
     });
+    
+    // Handle token expiration (401 Unauthorized)
+    if (error.response?.status === 401) {
+      console.log('Token expired or invalid. Logging out...');
+      
+      // Clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Redirect to login page if not already there
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login?session=expired';
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -51,15 +66,16 @@ export const authAPI = {
   updateUser: (data) => api.put('/user', data),
 };
 
+// Tambahkan di productAPI:
 export const productAPI = {
   getAll: (params = {}) => api.get('/products', { params }),
+  getAllIncludingPending: (params = {}) => api.get('/all-products', { params }), // New endpoint
   getMyProducts: () => api.get('/my-products'),
   getById: (id) => api.get(`/products/${id}`),
   create: (data) =>
     api.post('/products', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  // 🔥 PERBAIKAN: Tambah headers multipart untuk update juga
   update: (id, data) => 
     api.post(`/products/${id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -110,8 +126,9 @@ export const reviewAPI = {
 // Verification API
 export const verificationAPI = {
   getPending: () => api.get('/verifications/pending'),
+  getApproved: () => api.get('/verifications/verified'),
+  getRejected: () => api.get('/verifications/rejected'),
   verifyProduct: (id, data) => api.patch(`/verifications/${id}`, data),
-  getVerified: () => api.get('/verifications/verified'),
 };
 
 // Admin API

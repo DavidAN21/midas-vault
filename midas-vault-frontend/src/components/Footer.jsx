@@ -83,7 +83,6 @@ const Footer = () => {
                 // Links untuk admin
                 <>
                   <FooterLink to="/admin" text="Dashboard Admin" isActive={isActiveRoute('/admin')} />
-                  <FooterLink to="/verifications" text="Verifikasi Produk" isActive={isActiveRoute('/verifications')} />
                 </>
               )}
               <FooterLink to="/contact" text="Kontak" isActive={isActiveRoute('/contact')} />

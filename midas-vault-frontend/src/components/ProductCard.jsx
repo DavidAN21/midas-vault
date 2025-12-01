@@ -16,7 +16,6 @@ const ProductCard = ({ product }) => {
       minimumFractionDigits: 0
     }).format(price);
 
-  // ✅ Hanya produk verified yang bisa dibeli
   const handleBuy = async () => {
     if (!user.id) {
       alert('Silakan login terlebih dahulu!');
@@ -29,13 +28,23 @@ const ProductCard = ({ product }) => {
       return;
     }
 
-    if (product.verification_status !== 'approved') {
-      alert('Produk ini belum terverifikasi!');
+    if (product.status !== 'available') {
+      alert('Produk sudah tidak tersedia!');
       return;
     }
 
-    if (product.status !== 'available') {
-      alert('Produk sudah tidak tersedia!');
+    // Warning untuk produk pending
+    if (product.verification_status === 'pending') {
+      const confirmMessage = `⚠️ PERINGATAN!\n\nProduk "${product.name}" BELUM TERVERIFIKASI oleh admin.\n\n✅ Anda tetap bisa membeli, tapi:\n• Produk belum dicek kualitas dan keasliannya\n• Admin akan memverifikasi sebelum transaksi lanjut\n• Mungkin ada penundaan proses verifikasi\n\nLanjutkan pembelian?`;
+      
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    }
+
+    // Warning untuk produk rejected (sebagai cadangan)
+    if (product.verification_status === 'rejected') {
+      alert('❌ Produk ini telah ditolak dan tidak dapat dibeli!');
       return;
     }
 
@@ -93,7 +102,7 @@ const ProductCard = ({ product }) => {
 
   const getStatusColor = () => {
     if (product.status !== 'available') return 'bg-red-500 text-white';
-    if (product.verification_status !== 'approved') return 'bg-yellow-500 text-white';
+    if (product.verification_status === 'rejected') return 'bg-red-500 text-white';
     return 'bg-emerald-500 text-white';
   };
 
@@ -105,10 +114,10 @@ const ProductCard = ({ product }) => {
         </svg>
       );
     }
-    if (product.verification_status !== 'approved') {
+    if (product.verification_status === 'rejected') {
       return (
         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+          <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
         </svg>
       );
     }
@@ -148,13 +157,31 @@ const ProductCard = ({ product }) => {
 
           {/* Top Badges Container */}
           <div className="absolute top-3 left-3 right-3 flex flex-wrap gap-2">
-            {/* Verified Badge */}
+            {/* Verification Status Badge */}
             {product.verification_status === 'approved' && (
               <div className="bg-gradient-to-r from-emerald-500 to-green-400 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center space-x-1">
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
                 <span>Verified</span>
+              </div>
+            )}
+
+            {product.verification_status === 'pending' && (
+              <div className="bg-gradient-to-r from-yellow-500 to-amber-400 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center space-x-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span>Pending</span>
+              </div>
+            )}
+
+            {product.verification_status === 'rejected' && (
+              <div className="bg-gradient-to-r from-red-500 to-pink-400 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center space-x-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                </svg>
+                <span>Ditolak</span>
               </div>
             )}
 
@@ -176,7 +203,11 @@ const ProductCard = ({ product }) => {
             <div className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${getStatusColor()} flex items-center space-x-1`}>
               {getStatusIcon()}
               <span>
-                {product.status !== 'available' ? 'Terjual' : product.verification_status !== 'approved' ? 'Pending' : 'Tersedia'}
+                {product.status !== 'available' 
+                  ? 'Terjual' 
+                  : product.verification_status === 'rejected'
+                  ? 'Ditolak'
+                  : 'Tersedia'}
               </span>
             </div>
           </div>
@@ -207,7 +238,7 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Content Container */}
-      <div className="p-6">
+      <div className="p-4">
         {/* Product Title */}
         <h3 className="font-bold text-xl mb-3 text-gray-900 line-clamp-2 group-hover:text-midas-dark transition-colors duration-300">
           {product.name}
@@ -227,6 +258,40 @@ const ProductCard = ({ product }) => {
             {product.category}
           </span>
         </div>
+
+        {/* Warning untuk produk pending */}
+        {product.verification_status === 'pending' && product.status === 'available' && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-yellow-800">Produk Belum Diverifikasi</p>
+                <p className="text-xs text-yellow-600 mt-1">
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Warning untuk produk rejected */}
+        {product.verification_status === 'rejected' && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-red-800">Produk Ditolak</p>
+                <p className="text-xs text-red-600 mt-1">
+                  Produk ini telah ditolak oleh admin dan tidak dapat dibeli. 
+                  Silakan hubungi penjual untuk informasi lebih lanjut.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Seller and Date Info */}
         <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
@@ -262,7 +327,7 @@ const ProductCard = ({ product }) => {
               product.status !== 'available' ||
               user.id === product.user_id ||
               isAdmin ||
-              product.verification_status !== 'approved'
+              product.verification_status === 'rejected' // Hanya disable untuk rejected
             }
             className="flex-1 group/btn bg-gradient-to-r from-midas-gold to-yellow-500 text-midas-dark text-center py-3 rounded-xl font-bold hover:from-yellow-500 hover:to-amber-500 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale flex items-center justify-center space-x-2 relative overflow-hidden"
           >
@@ -294,6 +359,20 @@ const ProductCard = ({ product }) => {
                   <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                 </svg>
                 <span>Admin</span>
+              </>
+            ) : product.verification_status === 'pending' ? (
+              <>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span className="font-bold">Beli (Pending)</span>
+              </>
+            ) : product.verification_status === 'rejected' ? (
+              <>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                </svg>
+                <span>Ditolak</span>
               </>
             ) : (
               <>

@@ -843,15 +843,6 @@ const Dashboard = () => {
                       </svg>
                       <span>Terima</span>
                     </button>
-                    <button
-                      onClick={() => handleRejectTradeIn(tradeIn.id)}
-                      className="group bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
-                    >
-                      <svg className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span>Tolak</span>
-                    </button>
                   </>
                 )}
 

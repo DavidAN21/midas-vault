@@ -28,6 +28,8 @@ Route::prefix('v1')->group(function () {
         // Products
         Route::apiResource('products', ProductController::class)->except(['index', 'show']);
         Route::get('/my-products', [ProductController::class, 'myProducts']);
+        Route::get('/all-products', [ProductController::class, 'getAllProducts']);
+
 
         // Transactions
         Route::apiResource('transactions', TransactionController::class)->only(['store', 'show']);
@@ -59,8 +61,9 @@ Route::prefix('v1')->group(function () {
         Route::middleware('admin')->group(function () {
             Route::get('/admin/overview', [AdminController::class, 'overview']);
             Route::get('/verifications/pending', [VerificationController::class, 'pending']);
-            Route::patch('/verifications/{product}', [VerificationController::class, 'update']);
             Route::get('/verifications/verified', [VerificationController::class, 'verifiedProducts']);
+            Route::get('/verifications/rejected', [VerificationController::class, 'rejectedProducts']); // Tambah ini
+            Route::patch('/verifications/{product}', [VerificationController::class, 'update']);
         });
         Route::get('/debug-storage', function() {
             // Test write file

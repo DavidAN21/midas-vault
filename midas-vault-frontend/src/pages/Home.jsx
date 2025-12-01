@@ -19,13 +19,16 @@ const Home = () => {
   const fetchFeaturedProducts = async () => {
     try {
       const response = await productAPI.getAll({ verified: 'true', limit: 8 });
-      // Filter produk dengan kondisi excellent atau good dan batasi menjadi 4 produk
+      // Filter produk dengan kondisi excellent atau good, dan hanya produk yang terverifikasi
       const filteredProducts = response.data.data
-        .filter(product => 
-          product.condition?.toLowerCase() === 'excellent' || 
-          product.condition?.toLowerCase() === 'good'
-        )
-        .slice(0, 6); // Batasi hanya 4 produk
+        .filter(product => {
+          const condition = product.condition?.toLowerCase();
+          const isVerified = product.verification_status === 'approved';
+          const isGoodCondition = condition === 'excellent' || condition === 'good';
+          
+          return isVerified && isGoodCondition;
+        })
+        .slice(0, 6); // Batasi hanya 6 produk
       setFeaturedProducts(filteredProducts);
     } catch (error) {
       console.error('Error fetching featured products:', error);
@@ -240,7 +243,7 @@ const Home = () => {
               Barang Unggulan
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Produk pilihan premium dengan kondisi Excellent & Good yang sudah terverifikasi
+              Produk pilihan premium dengan kondisi sangat bai & baik, serta yang sudah terverifikasi
             </p>
           </div>
           

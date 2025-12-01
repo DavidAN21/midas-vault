@@ -9,11 +9,16 @@ const Marketplace = () => {
   const [filters, setFilters] = useState({
     category: 'all',
     condition: 'all',
-    verified: 'all',
+    verification_status: 'all', // Default hanya tampilkan approved
   });
 
   const categories = ['all', 'Fashion', 'Electronics', 'Books', 'Hobbies', 'Home', 'Other'];
   const conditions = ['all', 'excellent', 'good', 'fair', 'poor'];
+  const verificationStatuses = [
+    { value: 'all', label: 'Semua (Kecuali Ditolak)' },
+    { value: 'approved', label: 'Terverifikasi' },
+    { value: 'pending', label: 'Menunggu Verifikasi' },
+  ];
 
   useEffect(() => {
     fetchProducts();
@@ -23,12 +28,26 @@ const Marketplace = () => {
     try {
       setLoading(true);
       const params = {};
+      
       if (filters.category !== 'all') params.category = filters.category;
       if (filters.condition !== 'all') params.condition = filters.condition;
-      if (filters.verified !== 'all') params.verified = filters.verified === 'verified';
-
+      
+      // Filter berdasarkan verification_status
+      if (filters.verification_status !== 'all') {
+        params.verification_status = filters.verification_status;
+      }
+      
       const response = await productAPI.getAll(params);
-      setProducts(response.data.data);
+      
+      // Jika filter 'all', filter di frontend untuk mengecualikan 'rejected'
+      let filteredProducts = response.data.data;
+      if (filters.verification_status === 'all') {
+        filteredProducts = filteredProducts.filter(
+          product => product.verification_status !== 'rejected'
+        );
+      }
+      
+      setProducts(filteredProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -49,6 +68,13 @@ const Marketplace = () => {
       all: 'Semua Kondisi'
     };
     return conditions[condition] || condition;
+  };
+
+  const getVerificationBadge = (status) => {
+    switch(status) {
+      default:
+        return null;
+    }
   };
 
   return (
@@ -75,7 +101,11 @@ const Marketplace = () => {
             </h2>
             
             <button
-              onClick={() => setFilters({ category: 'all', condition: 'all', verified: 'all' })}
+              onClick={() => setFilters({ 
+                category: 'all', 
+                condition: 'all', 
+                verification_status: 'all' 
+              })}
               className="group flex items-center space-x-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 px-6 py-3 rounded-2xl font-semibold hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-md hover:shadow-lg"
             >
               <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +158,7 @@ const Marketplace = () => {
               </select>
             </div>
 
-            {/* Verification Filter */}
+            {/* Verification Status Filter */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
                 <svg className="w-4 h-4 text-midas-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,13 +167,15 @@ const Marketplace = () => {
                 <span>Status Verifikasi</span>
               </label>
               <select
-                value={filters.verified}
-                onChange={(e) => handleFilterChange('verified', e.target.value)}
+                value={filters.verification_status}
+                onChange={(e) => handleFilterChange('verification_status', e.target.value)}
                 className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-midas-gold focus:ring-2 focus:ring-midas-gold/20 transition-all duration-300 bg-white shadow-sm hover:border-gray-300"
               >
-                <option value="all">Semua Status</option>
-                <option value="verified">Terverifikasi</option>
-                <option value="unverified">Belum Terverifikasi</option>
+                {verificationStatuses.map(status => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -157,6 +189,7 @@ const Marketplace = () => {
               Menampilkan <span className="text-midas-gold">{products.length}</span> produk
             </span>
           </div>
+          
           
           {!loading && products.length > 0 && (
             <div className="flex items-center space-x-2 text-gray-500">
@@ -177,7 +210,15 @@ const Marketplace = () => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <div key={product.id} className="relative">
+                  <ProductCard product={product} />
+                  {/* Badge status verifikasi */}
+                  {product.verification_status && product.verification_status !== 'approved' && (
+                    <div className="absolute top-3 right-3 z-10">
+                      {getVerificationBadge(product.verification_status)}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             
@@ -198,7 +239,11 @@ const Marketplace = () => {
                   Coba ubah filter pencarian Anda atau sesuaikan kriteria yang diinginkan
                 </p>
                 <button
-                  onClick={() => setFilters({ category: 'all', condition: 'all', verified: 'all' })}
+                  onClick={() => setFilters({ 
+                    category: 'all', 
+                    condition: 'all', 
+                    verification_status: 'all' 
+                  })}
                   className="group bg-gradient-to-r from-midas-gold to-yellow-500 text-midas-dark px-8 py-3 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 inline-flex items-center space-x-2"
                 >
                   <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -18,7 +18,7 @@ class VerificationController extends Controller
             ], 403);
         }
 
-        // Hanya ambil produk dengan status pending
+        // Produk menunggu verifikasi
         $products = Product::where('verification_status', 'pending')
             ->where('status', 'available')
             ->with(['user'])
@@ -52,17 +52,17 @@ class VerificationController extends Controller
                     'verified_at' => now(),
                     'verification_status' => 'approved',
                 ]);
-                
+
                 $message = 'Produk berhasil diverifikasi! Sekarang muncul di marketplace.';
             } else {
                 $product->update([
                     'verification_status' => 'rejected',
                 ]);
-                
+
                 $message = 'Produk ditolak verifikasi. Tidak akan muncul di marketplace.';
             }
 
-            // Selalu buat record verification
+            // Simpan riwayat verifikasi
             Verification::create([
                 'product_id' => $product->id,
                 'verifier_id' => $request->user()->id,
@@ -95,6 +95,26 @@ class VerificationController extends Controller
 
         $products = Product::where('verification_status', 'approved')
             ->with(['user', 'verifier'])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $products
+        ]);
+    }
+
+    public function rejectedProducts(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        $products = Product::where('verification_status', 'rejected')
+            ->with(['user', 'verifications']) // semua histori verifikasi
             ->latest()
             ->get();
 

@@ -65,8 +65,13 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with(['user', 'verifier'])
-            ->where('verification_status', 'approved')
+            ->where('verification_status', '!=', 'rejected') // Tampilkan semua kecuali rejected
             ->where('status', 'available');
+
+        // Filter by verification status
+        if ($request->has('verification_status') && $request->verification_status !== 'all') {
+            $query->where('verification_status', $request->verification_status);
+        }
 
         if ($request->has('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
@@ -74,10 +79,6 @@ class ProductController extends Controller
 
         if ($request->has('condition') && $request->condition !== 'all') {
             $query->where('condition', $request->condition);
-        }
-
-        if ($request->has('verified') && $request->verified === 'true') {
-            $query->whereNotNull('verified_at');
         }
 
         return response()->json([
@@ -89,8 +90,6 @@ class ProductController extends Controller
 
     // ========================================
     // STORE (Sudah termasuk barter & trade-in)
-    // ========================================
-    // Di ProductController.php - method store()
     // Di ProductController.php - method store()
     public function store(ProductRequest $request)
     {
@@ -213,6 +212,32 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Produk berhasil diarchive'
+        ]);
+    }
+
+    // GET ALL PRODUCTS (Including pending)
+    // ========================================
+    public function getAllProducts(Request $request)
+    {
+        $query = Product::with(['user', 'verifier'])
+            ->where('verification_status', '!=', 'rejected') // Tampilkan approved dan pending
+            ->where('status', 'available');
+
+        if ($request->has('category') && $request->category !== 'all') {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->has('condition') && $request->condition !== 'all') {
+            $query->where('condition', $request->condition);
+        }
+
+        if ($request->has('verification_status') && $request->verification_status !== 'all') {
+            $query->where('verification_status', $request->verification_status);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $query->latest()->get()
         ]);
     }
 
